@@ -37,7 +37,7 @@ CommandFunction = Union[ChatFunction, UserFunction, MessageFunction]
 
 
 class CommandBuilder:
-    """Builds :class:`Command` instances from functions. Typically constructed with :func:`flask_discord_interactions.discord.Discord.command`."""
+    """Builds :class:`Command` instances from functions. Typically constructed with :meth:`~flask_discord_interactions.discord.Discord.command`."""
 
     def __init__(
         self,
