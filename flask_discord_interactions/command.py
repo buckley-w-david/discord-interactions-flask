@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import List, Union, Dict
+from typing import Union, Dict
 import jsons
 
 from flask_discord_interactions.discord_types import CommandType
@@ -29,16 +29,18 @@ class ChatCommand:
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
+
 class SubCommand(ChatCommand):
     def spec(self) -> dict:
         spec = super().spec()
         spec["type"] = types.ApplicationCommandOptionType.SUB_COMMAND
         return spec
 
+
 @dataclass
 class CommandGroup:
     name: str
-    description: str =  ""
+    description: str = ""
     subcommands: Dict[str, SubCommand] = field(default_factory=dict)
 
     def spec(self):
@@ -46,8 +48,9 @@ class CommandGroup:
             "name": self.name,
             "description": self.description,
             "type": types.ApplicationCommandOptionType.SUB_COMMAND_GROUP,
-            "options": [sc.spec() for (_, sc) in self.subcommands.items()]
+            "options": [sc.spec() for (_, sc) in self.subcommands.items()],
         }
+
 
 @dataclass
 class ChatMetaCommand:
@@ -60,12 +63,13 @@ class ChatMetaCommand:
             "name": self.name,
             "type": CommandType.CHAT,
             "description": self.description,
-            "options": [child.spec() for (_, child) in self.children.items()]
+            "options": [child.spec() for (_, child) in self.children.items()],
         }
 
     # TODO: Dispatch to correct subcommand
     def __call__(self, *args, **kwargs):
         pass
+
 
 class UserCommand:
     def __init__(self, name: str, func):
@@ -82,6 +86,7 @@ class UserCommand:
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
+
 class MessageCommand:
     def __init__(self, name: str, func):
         self.name = name
@@ -96,3 +101,6 @@ class MessageCommand:
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
+
+
+Command = Union[ChatCommand, ChatMetaCommand, UserCommand, MessageCommand]

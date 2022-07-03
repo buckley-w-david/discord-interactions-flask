@@ -1,0 +1,195 @@
+"""Builds :class:`Command` instances from functions."""
+from collections.abc import Generator
+from contextlib import contextmanager
+import inspect
+import logging
+from typing import Callable, Optional, Union, Dict, cast
+
+from flask_discord_interactions import discord_types as types
+from flask_discord_interactions.command import (
+    ChatCommand,
+    ChatMetaCommand,
+    CommandGroup,
+    MessageCommand,
+    SubCommand,
+    UserCommand,
+)
+
+logger = logging.getLogger(__name__)
+
+COMMANDS = {
+    types.ChatInteraction: ChatCommand,
+    types.UserInteraction: UserCommand,
+    types.MessageInteraction: MessageCommand,
+}
+
+GLOBAL_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/commands"
+GUILD_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/guilds/%s/commands"
+OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
+
+ChatFunction = Callable[[types.ChatInteraction], types.InteractionResponse]
+UserFunction = Callable[[types.UserInteraction], types.InteractionResponse]
+MessageFunction = Callable[[types.MessageInteraction], types.InteractionResponse]
+# There is a term for why I need to specify the type like this instead of `Callable[[types.Interaction], types.InteractionResponse]` being able to apply to all three, I just forget what it is
+# The rationale is that `Callable[[types.Interaction], types.InteractionResponse]` means "Function that can take any Interaction and returns an InteractionResponse"
+# A function that can only take UserInteractions does not satisfy that
+CommandFunction = Union[ChatFunction, UserFunction, MessageFunction]
+
+
+class CommandBuilder:
+    """Builds :class:`Command` instances from functions. Typically constructed with :func:`flask_discord_interactions.discord.Discord.command`."""
+
+    def __init__(
+        self,
+        commands: Dict,
+        name: Optional[str],
+    ):
+        """Initialize :class:`CommandBuilder`.
+
+        Args
+            commands: A reference to a dict of commands tracked in :class:`flask_discord_interactions.discord.Discord`.
+            name: An optional name to use for the command. If not present the command functions name will be used.
+        """
+        self.commands = commands
+        self.name = name
+
+        self.context = {}
+
+    def __call__(self, f: CommandFunction):
+        """Decorate a command function to create a :class:`Command`.
+
+        .. code-block:: python
+
+            @discord.command()
+            def command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+                return ...
+
+        Args
+            f: A callable that takes a :class:`types.ChatInteraction`, :class:`types.UserInteraction`, or :class:`types.MessageInteraction` instance and returns a :class:`types.InteractionResponse`.
+        """
+        signature = inspect.signature(f)
+        param = list(signature.parameters.values())[0]
+        if not (command_class := COMMANDS.get(param.annotation)):
+            raise ValueError("Command parameter must be a valid Interaction type")
+
+        if self.name:
+            name = self.name
+        else:
+            name = f.__name__
+        command = command_class(name, f)
+        self.commands[name] = command
+        return command
+
+    def subcommand(
+        self, name: Optional[str] = None
+    ) -> Callable[[ChatFunction], SubCommand]:
+        """Create a decorator for a command function to create a :class:`Command`. Should only be used within a :func:`group`.
+
+        .. code-block:: python
+
+            @group.subcommand("sub-command")
+            def sub_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+                return ...
+
+        Args
+            name: An optional name to give the subcommand. If not given the functions name is used.
+        """
+
+        def outer(
+            f: Callable[[types.ChatInteraction], types.InteractionResponse]
+        ) -> SubCommand:
+            if not name:
+                command_name = f.__name__
+            else:
+                command_name = name
+
+            subcommand = SubCommand(command_name, f)
+            self.context[name] = subcommand
+            return subcommand
+
+        return outer
+
+    @contextmanager
+    def group(self, name: str) -> Generator["CommandBuilder", None, None]:
+        """Create a subcommand group.
+
+        .. code-block:: python
+
+            with command.group("group_name") as group:
+                group.description = ...
+                @group.subcommand()
+                ...
+
+        Args
+            name: An name for the group.
+        """
+        group_context = {}
+        old_context = self.context
+        old_context[name] = group_context
+        self.context = group_context
+        yield self
+        self.context = old_context
+
+    # :grimacing:
+    @property
+    def description(self):
+        """Set the description used for the current command/group."""
+        return self.context["__description"]
+
+    @description.setter
+    def description(self, value: str):
+        self.context["__description"] = value
+
+    @description.deleter
+    def description(self):
+        del self.context["__description"]
+
+    def __enter__(self) -> "CommandBuilder":
+        """Create subcommands and commad grounp.
+
+        .. code-block:: python
+
+            with discord.command("command-name") as command:
+                command.description = ...
+                with command.group("group") as group:
+                    group.description = ...
+                    @group.subcommand()
+                    ...
+                @command.subcommand()
+                def subcommand(...):
+                    ...
+        """
+        if not self.name:
+            raise ValueError("Commands created with the context manager require a name")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Build the Command containing the groups/subcommands defined with this Builder."""
+        if exc_type is None and exc_val is None and exc_tb is None:
+            children = {}
+            for (name, child) in self.context.items():
+                if name.startswith("__"):
+                    continue
+
+                if isinstance(child, dict):
+                    group = CommandGroup(
+                        name=name, description=child.get("__description", "")
+                    )
+                    for (subname, subcommand) in child.items():
+                        if subname.startswith("__"):
+                            continue
+                        if not isinstance(subcommand, SubCommand):
+                            raise ValueError(
+                                "Groups may not contain anything other than subcommands"
+                            )
+                        group.subcommands[subname] = subcommand
+                    children[name] = group
+                else:
+                    children[name] = child
+
+            meta_command = ChatMetaCommand(
+                name=cast(str, self.name),
+                children=children,
+                description=self.context.get("__description", ""),
+            )
+            self.commands[self.name] = meta_command
