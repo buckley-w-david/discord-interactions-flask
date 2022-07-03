@@ -1,4 +1,6 @@
 import os
+from dataclasses import asdict
+
 from flask_discord_interactions import Discord
 from flask_discord_interactions import discord_types as types
 from flask import Flask

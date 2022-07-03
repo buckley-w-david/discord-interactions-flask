@@ -95,9 +95,7 @@ class CommandBuilder:
             name: An optional name to give the subcommand. If not given the functions name is used.
         """
 
-        def outer(
-            f: Callable[[types.ChatInteraction], types.InteractionResponse]
-        ) -> SubCommand:
+        def outer(f: ChatFunction) -> SubCommand:
             if not name:
                 command_name = f.__name__
             else:
@@ -131,6 +129,7 @@ class CommandBuilder:
         self.context = old_context
 
     # :grimacing:
+    # I don't like this hacky solution around command/group description
     @property
     def description(self):
         """Set the description used for the current command/group."""

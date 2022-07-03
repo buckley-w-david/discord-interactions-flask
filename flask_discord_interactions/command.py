@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Union, Dict
+from typing import Union, Dict, cast
 import jsons
 
 from flask_discord_interactions.discord_types import CommandType
@@ -51,6 +51,14 @@ class CommandGroup:
             "options": [sc.spec() for (_, sc) in self.subcommands.items()],
         }
 
+    def __call__(self, interaction: types.ChatInteraction, group_options: types.ApplicationCommandInteractionDataOption) -> types.InteractionResponse:
+        if not group_options.options:
+            raise ValueError("Expected group to have options to define subcommand options")
+
+        subcommand_data = group_options.options[0]
+        subcommand = self.subcommands[subcommand_data.name]
+        return subcommand(interaction)
+
 
 @dataclass
 class ChatMetaCommand:
@@ -66,9 +74,20 @@ class ChatMetaCommand:
             "options": [child.spec() for (_, child) in self.children.items()],
         }
 
-    # TODO: Dispatch to correct subcommand
-    def __call__(self, *args, **kwargs):
-        pass
+    def __call__(self, interaction: types.ChatInteraction) -> types.InteractionResponse:
+        if not interaction.data.options:
+            raise ValueError("Expected meta command to have a group or subcommand")
+
+        data = interaction.data.options[0]
+        match data.type:
+            case types.ApplicationCommandOptionType.SUB_COMMAND_GROUP:
+                group = cast(CommandGroup, self.children[data.name])
+                return group(interaction, data)
+            case types.ApplicationCommandOptionType.SUB_COMMAND:
+                subcommand = cast(SubCommand, self.children[data.name])
+                return subcommand(interaction)
+            case _:
+                raise ValueError("Invalid interaction type in options")
 
 
 class UserCommand:
