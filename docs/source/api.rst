@@ -14,6 +14,7 @@ CommandBuilder
 --------------
 .. automodule:: flask_discord_interactions.command_builder
    :members:
+   :special-members:
 
 Discord types
 --------------
