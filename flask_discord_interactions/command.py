@@ -26,8 +26,8 @@ class ChatCommand:
             "options": [jsons.dump(o, use_enum_name=False) for o in self.options],
         }
 
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+    def __call__(self, interaction: types.ChatInteraction):
+        return self.func(interaction)
 
 
 class SubCommand(ChatCommand):
@@ -51,9 +51,15 @@ class CommandGroup:
             "options": [sc.spec() for (_, sc) in self.subcommands.items()],
         }
 
-    def __call__(self, interaction: types.ChatInteraction, group_options: types.ApplicationCommandInteractionDataOption) -> types.InteractionResponse:
+    def __call__(self, interaction: types.ChatInteraction) -> types.InteractionResponse:
+        if not interaction.data.options:
+            raise ValueError("This should be impossible")
+
+        group_options = interaction.data.options[0]
         if not group_options.options:
-            raise ValueError("Expected group to have options to define subcommand options")
+            raise ValueError(
+                "Expected group to have options to define subcommand options"
+            )
 
         subcommand_data = group_options.options[0]
         subcommand = self.subcommands[subcommand_data.name]
@@ -79,15 +85,11 @@ class ChatMetaCommand:
             raise ValueError("Expected meta command to have a group or subcommand")
 
         data = interaction.data.options[0]
-        match data.type:
-            case types.ApplicationCommandOptionType.SUB_COMMAND_GROUP:
-                group = cast(CommandGroup, self.children[data.name])
-                return group(interaction, data)
-            case types.ApplicationCommandOptionType.SUB_COMMAND:
-                subcommand = cast(SubCommand, self.children[data.name])
-                return subcommand(interaction)
-            case _:
-                raise ValueError("Invalid interaction type in options")
+        command = self.children[data.name]
+        if not command:
+            raise ValueError("Subcomand is not part of this ChatMetaCommand")
+
+        return command(interaction)
 
 
 class UserCommand:
@@ -102,8 +104,8 @@ class UserCommand:
             "type": CommandType.USER,
         }
 
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+    def __call__(self, interaction: types.UserInteraction):
+        return self.func(interaction)
 
 
 class MessageCommand:
@@ -118,8 +120,8 @@ class MessageCommand:
             "type": CommandType.MESSAGE,
         }
 
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+    def __call__(self, interaction: types.MessageInteraction):
+        return self.func(interaction)
 
 
 Command = Union[ChatCommand, ChatMetaCommand, UserCommand, MessageCommand]

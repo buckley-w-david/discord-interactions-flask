@@ -5,10 +5,6 @@ This is the primary interaction point, a user will define their commands using a
 """
 
 
-# TODO: Your app can have a global CHAT_INPUT and USER command with the same name
-#       Do I just decide to not support that?
-#       I would have to break out each command type into separate dicts
-
 from collections import defaultdict
 import json
 import logging
@@ -16,8 +12,6 @@ from typing import Optional
 
 from flask import Blueprint, Flask, jsonify, request
 
-# TODO: I think I could switch types to attrs and use cattrs for this
-import jsons
 import urllib3
 
 from flask_discord_interactions import discord_types as types
@@ -32,7 +26,6 @@ GUILD_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/guilds/%s/comm
 OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
 
 
-# TODO: Design Components
 class Discord:
     """Creates :class:`Command` s, submits them to the configured Discord application, and recieves the HTTP requests."""
 
@@ -82,6 +75,7 @@ class Discord:
         if not self.public_key:
             raise ValueError("You must define a DISCORD_PUBLIC_KEY configuration value")
 
+        # TODO: I'd like to move the bp out of init_app, the verify_key_decorator makes it awkward since with it I need the public key at bp creation time
         interactions_bp = Blueprint("interactions", __name__, url_prefix="/discord")
 
         @interactions_bp.post("/interactions")
@@ -97,22 +91,21 @@ class Discord:
                 case types.InteractionType.APPLICATION_COMMAND:
                     match payload["data"]["type"]:
                         case types.CommandType.CHAT:
-                            interaction = jsons.load(payload, types.ChatInteraction)
+                            interaction = types.ChatInteraction.load(payload)
                         case types.CommandType.USER:
-                            interaction = jsons.load(payload, types.UserInteraction)
+                            interaction = types.UserInteraction.load(payload)
                         case types.CommandType.MESSAGE:
-                            interaction = jsons.load(payload, types.MessageInteraction)
+                            interaction = types.MessageInteraction.load(payload)
                         case _:
                             raise ValueError("WTF Discord?")
 
                     result = self.runtime_commands[interaction.data.id](interaction)
                     if result:
-                        return jsonify(jsons.dump(result, use_enum_name=False))
+                        return jsonify(result.dump(use_enum_name=False))
                 case _:
                     pass
 
         app.register_blueprint(interactions_bp)
-        # TODO: There should be a mechanism to opt-out of automatically init_commands-ing
         self.init_commands(app)
 
     def refresh_token(self):
@@ -153,7 +146,7 @@ class Discord:
             "POST", url, body=json.dumps(command.spec()).encode("utf-8")
         )
         interaction_payload = json.loads(resp.data.decode("utf-8"))
-        return jsons.load(interaction_payload, types.ApplicationCommand)
+        return types.ApplicationCommand.load(interaction_payload)
 
     def init_commands(self, app: Flask):
         """Sync the :class:`Command` s configured with this :class:`Discord` instance to the Discord application indicated by the DISCORD_CLIENT_ID key.
@@ -179,8 +172,6 @@ class Discord:
             return
 
         self.refresh_token()
-
-        # TODO: Better (any) logs when things go wrong
 
         for (guild_id, commands) in self.guild_commands.items():
             for (_, command) in commands.items():
