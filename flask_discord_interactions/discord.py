@@ -6,9 +6,10 @@ This is the primary interaction point, a user will define their commands using a
 
 
 from collections import defaultdict
+import http
 import json
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from flask import Blueprint, Flask, jsonify, request
 
@@ -18,6 +19,18 @@ from flask_discord_interactions import discord_types as types
 from flask_discord_interactions.verify import verify_key_decorator
 from flask_discord_interactions.command_builder import CommandBuilder
 from flask_discord_interactions.command import Command
+from flask_discord_interactions.interactions import (
+    ChatInteraction,
+    UserInteraction,
+    MessageInteraction,
+    ButtonInteraction,
+    SelectMenuInteraction,
+    TextInputInteraction,
+    ComponentInteraction,
+    CommandInteraction,
+)
+from flask_discord_interactions import helpers
+from flask_discord_interactions import components
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +39,42 @@ GUILD_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/guilds/%s/comm
 OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
 
 
+def _missing_component_handler(
+    interaction: ComponentInteraction,
+) -> types.InteractionResponse:
+    return helpers.content_response(
+        ":warning: Sorry, that component has expired! :warning:"
+    )
+
+
+def _missing_command_handler(
+    interaction: CommandInteraction,
+) -> types.InteractionResponse:
+    return helpers.content_response(
+        ":warning: Sorry, I don't understand that command! :warning:"
+    )
+
+
 class Discord:
     """Creates :class:`Command` s, submits them to the configured Discord application, and recieves the HTTP requests."""
 
-    def __init__(self, app: Optional[Flask] = None):
+    def __init__(
+        self,
+        app: Optional[Flask] = None,
+        missing_command_handler=_missing_command_handler,
+        missing_component_handler=_missing_component_handler,
+    ):
         """Initialzation."""
-        self.guild_commands = defaultdict(dict)
-        self.global_commands = {}
-        self.runtime_commands = {}
+        self.guild_commands: defaultdict[str, dict[str, Command]] = defaultdict(dict)
+        self.global_commands: dict[str, Command] = {}
+        self.runtime_commands: dict[str, Command] = {}
+        # TODO: evict old handlers
+        self.component_handlers: defaultdict[
+            str, dict[str, components.Component]
+        ] = defaultdict(dict)
+
+        self.missing_command_handler = missing_command_handler
+        self.missing_component_handler = missing_component_handler
         self.http = urllib3.PoolManager(headers={"Content-Type": "application/json"})
         if app:
             self.init_app(app)
@@ -65,6 +106,27 @@ class Discord:
             commands = self.global_commands
         return CommandBuilder(commands, name)
 
+    def _handle_response(
+        self, interaction: types.Interaction, response: types.InteractionResponse
+    ):
+        print(
+            response.dump(
+                use_enum_name=False, strip_privates=True, strip_properties=True
+            )
+        )
+        if response.data and response.data.components:
+            for row in response.data.components:
+                for component in row.components:
+                    self.component_handlers[interaction.id][
+                        component.custom_id
+                    ] = component
+
+        return jsonify(
+            response.dump(
+                use_enum_name=False, strip_privates=True, strip_properties=True
+            )
+        )
+
     def init_app(self, app: Flask) -> None:
         """Initialize the :class:`Flask` instance with all the commands defined on this :class:`Discord` instance.
 
@@ -89,21 +151,57 @@ class Discord:
                 case types.InteractionType.PING:
                     return jsonify(type=types.InteractionCallbackType.PONG)
                 case types.InteractionType.APPLICATION_COMMAND:
+                    command_interaction: Union[
+                        ChatInteraction, UserInteraction, MessageInteraction
+                    ]
                     match payload["data"]["type"]:
                         case types.CommandType.CHAT:
-                            interaction = interactions.ChatInteraction.load(payload)
+                            command_interaction = ChatInteraction.load(payload)
                         case types.CommandType.USER:
-                            interaction = interactions.UserInteraction.load(payload)
+                            command_interaction = UserInteraction.load(payload)
                         case types.CommandType.MESSAGE:
-                            interaction = interactions.MessageInteraction.load(payload)
+                            command_interaction = MessageInteraction.load(payload)
                         case _:
                             raise ValueError("WTF Discord?")
 
-                    result = self.runtime_commands[interaction.data.id](interaction)
-                    if result:
-                        return jsonify(result.dump(use_enum_name=False))
+                    handler = self.runtime_commands.get(command_interaction.data.id)
+                    if not handler:
+                        result = self.missing_command_handler(command_interaction)
+                    else:
+                        result = handler(command_interaction)
+
+                    return self._handle_response(command_interaction, result)
+                case types.InteractionType.MESSAGE_COMPONENT:
+                    component_interaction: Union[
+                        ButtonInteraction, SelectMenuInteraction, TextInputInteraction
+                    ]
+                    match payload["data"]["component_type"]:
+                        case types.ComponentType.BUTTON:
+                            component_interaction = ButtonInteraction.load(payload)
+                        case types.ComponentType.SELECT_MENU:
+                            component_interaction = SelectMenuInteraction.load(payload)
+                        case types.ComponentType.TEXT_INPUT:
+                            component_interaction = TextInputInteraction.load(payload)
+                        case _:
+                            raise ValueError("WTF Discord?")
+
+                    # It's interesting that typing errors have pushed my to explicitly define my invariants
+                    assert component_interaction.message is not None
+                    assert component_interaction.message.interaction is not None
+
+                    handler = self.component_handlers[
+                        component_interaction.message.interaction.id
+                    ].get(component_interaction.data.custom_id)
+                    if not handler:
+                        result = self.missing_component_handler(component_interaction)
+                    else:
+                        result = handler(component_interaction)
+
+                    return self._handle_response(component_interaction, result)
                 case _:
-                    pass
+                    print("OTHER")
+                    print(payload)
+                    return ("", http.HTTPStatus.NO_CONTENT)
 
         app.register_blueprint(interactions_bp)
         self.init_commands(app)

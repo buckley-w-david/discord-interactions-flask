@@ -24,7 +24,10 @@ class ChatCommand:
             "name": self.name,
             "type": CommandType.CHAT,
             "description": self.description,
-            "options": [jsons.dump(o, use_enum_name=False) for o in self.options],
+            "options": [
+                jsons.dump(o, use_enum_name=False, strip_privates=True)
+                for o in self.options
+            ],
         }
 
     def __call__(self, interaction: interactions.ChatInteraction):

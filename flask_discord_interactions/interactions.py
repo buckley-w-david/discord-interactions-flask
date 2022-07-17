@@ -1,15 +1,16 @@
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, List
 
-from flask_discord_interactions.discord_types import Interaction, InteractionData
+from flask_discord_interactions.discord_types import (
+    Interaction,
+    InteractionData,
+    MessageComponent,
+)
 
 # TODO: These can have their own definition
 ChatData = InteractionData
 UserData = InteractionData
 MessageData = InteractionData
-ButtonData = InteractionData
-SelectMenuData = InteractionData
-TextInputData = InteractionData
 # If we do give them their own definition
 # InteractionData = Union[ChatData, UserData, MessageData, ...]
 
@@ -27,6 +28,16 @@ class UserInteraction(Interaction):
 @dataclass
 class MessageInteraction(Interaction):
     data: MessageData
+
+
+# TODO: These can have their own definition
+ButtonData = MessageComponent
+TextInputData = MessageComponent
+
+
+@dataclass
+class SelectMenuData(MessageComponent):
+    values: List[str]
 
 
 @dataclass

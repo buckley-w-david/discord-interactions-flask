@@ -37,6 +37,7 @@ MessageFunction = Callable[[interactions.MessageInteraction], types.InteractionR
 CommandFunction = Union[ChatFunction, UserFunction, MessageFunction]
 
 
+# TODO: Add description param
 class CommandBuilder:
     """Builds :class:`Command` instances from functions. Typically constructed with :meth:`~flask_discord_interactions.discord.Discord.command`."""
 

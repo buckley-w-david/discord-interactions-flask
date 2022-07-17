@@ -319,17 +319,19 @@ class SelectOption(BaseModel):
     value: str  # string	the dev-defined value of the option, max 100 characters
     description: Optional[
         str
-    ]  # string	an additional description of the option, max 100 characters
-    emoji: Optional[Emoji]  # partial emoji object	id, name, and animated
-    default: Optional[bool]  # boolean	will render this option as selected by default
+    ] = None  # string	an additional description of the option, max 100 characters
+    emoji: Optional[Emoji] = None  # partial emoji object	id, name, and animated
+    default: Optional[
+        bool
+    ] = None  # boolean	will render this option as selected by default
 
 
 @dataclass
 class MessageComponent(BaseModel):
     custom_id: str  # string	the custom_id of the component
     component_type: int  # integer	the type of the component
-    values: List[
-        SelectOption
+    values: Optional[
+        List[str]
     ]  # array of select option values	values the user selected in a select menu component
 
 
