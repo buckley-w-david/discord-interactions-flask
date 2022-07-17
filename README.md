@@ -10,7 +10,7 @@ import os
 from flask import Flask
 
 from flask_discord_interactions import Discord
-from flask_discord_interactions import discord_types as types
+from flask_discord_interactions import helpers
 from flask_discord_interactions.interactions ChatInteraction
 
 app = Flask(__name__)
@@ -22,13 +22,8 @@ discord = Discord()
 
 @discord.command("slash-example")
 def chat_command(interaction: ChatInteraction) -> types.InteractionResponse:
-    return types.InteractionResponse(
-            type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                    data=types.InteractionCallbackDataMessage(
-            data=types.InteractionCallbackDataMessage(
-                content="Hello, World!"
-            )
-        )
+    return helpers.content_response("Hello, World!")
+
 chat_command.description = "Say hello via a slash command"
 
 discord.init_app(app)
