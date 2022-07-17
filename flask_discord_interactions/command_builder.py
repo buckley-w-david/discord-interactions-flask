@@ -14,22 +14,23 @@ from flask_discord_interactions.command import (
     SubCommand,
     UserCommand,
 )
+from flask_discord_interactions import interactions
 
 logger = logging.getLogger(__name__)
 
 COMMANDS = {
-    types.ChatInteraction: ChatCommand,
-    types.UserInteraction: UserCommand,
-    types.MessageInteraction: MessageCommand,
+    interactions.ChatInteraction: ChatCommand,
+    interactions.UserInteraction: UserCommand,
+    interactions.MessageInteraction: MessageCommand,
 }
 
 GLOBAL_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/commands"
 GUILD_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/guilds/%s/commands"
 OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
 
-ChatFunction = Callable[[types.ChatInteraction], types.InteractionResponse]
-UserFunction = Callable[[types.UserInteraction], types.InteractionResponse]
-MessageFunction = Callable[[types.MessageInteraction], types.InteractionResponse]
+ChatFunction = Callable[[interactions.ChatInteraction], types.InteractionResponse]
+UserFunction = Callable[[interactions.UserInteraction], types.InteractionResponse]
+MessageFunction = Callable[[interactions.MessageInteraction], types.InteractionResponse]
 # There is a term for why I need to specify the type like this instead of `Callable[[types.Interaction], types.InteractionResponse]` being able to apply to all three, I just forget what it is
 # The rationale is that `Callable[[types.Interaction], types.InteractionResponse]` means "Function that can take any Interaction and returns an InteractionResponse"
 # A function that can only take UserInteractions does not satisfy that
@@ -61,11 +62,11 @@ class CommandBuilder:
         .. code-block:: python
 
             @discord.command()
-            def command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+            def command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
                 return ...
 
         Args
-            f: A callable that takes a :class:`types.ChatInteraction`, :class:`types.UserInteraction`, or :class:`types.MessageInteraction` instance and returns a :class:`types.InteractionResponse`.
+            f: A callable that takes a :class:`interactions.ChatInteraction`, :class:`interactions.UserInteraction`, or :class:`interactions.MessageInteraction` instance and returns a :class:`types.InteractionResponse`.
         """
         signature = inspect.signature(f)
         param = list(signature.parameters.values())[0]
@@ -88,7 +89,7 @@ class CommandBuilder:
         .. code-block:: python
 
             @group.subcommand("sub-command")
-            def sub_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+            def sub_command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
                 return ...
 
         Args

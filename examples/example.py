@@ -3,31 +3,32 @@ from dataclasses import asdict
 
 from flask_discord_interactions import Discord
 from flask_discord_interactions import discord_types as types
+from flask_discord_interactions import interactions
 from flask import Flask
 
 discord = Discord()
 
 @discord.command("slash-example")
-def chat_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+def chat_command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
     return types.InteractionResponse(
         type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data=types.InteractionCallbackDataMessages(
+        data=types.InteractionCallbackDataMessage(
             content="Hello, World!"
         )
     )
 chat_command.description = "Say Hello via a slash command"
 
 @discord.command("User Example")
-def user_command(interaction: types.UserInteraction) -> types.InteractionResponse:
+def user_command(interaction: interactions.UserInteraction) -> types.InteractionResponse:
     return types.InteractionResponse(
         type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data=types.InteractionCallbackDataMessages(
+        data=types.InteractionCallbackDataMessage(
             content="Hello, <@%s>!" % interaction.data.target_id
         )
     )
 
 @discord.command("Message Example")
-def message_command(interaction: types.MessageInteraction) -> types.InteractionResponse:
+def message_command(interaction: interactions.MessageInteraction) -> types.InteractionResponse:
     if (resolved := interaction.data.resolved):
         messages = resolved.messages
         _, message = messages.popitem() # type: ignore
@@ -37,7 +38,7 @@ def message_command(interaction: types.MessageInteraction) -> types.InteractionR
 
     return types.InteractionResponse(
         type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data=types.InteractionCallbackDataMessages(
+        data=types.InteractionCallbackDataMessage(
             tts=True,
             content=content,
         )
@@ -46,20 +47,20 @@ def message_command(interaction: types.MessageInteraction) -> types.InteractionR
 with discord.command("slash-group") as command:
     command.description = "Example command with grous"
     @command.subcommand("sub-1")
-    def sub_1(interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def sub_1(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return types.InteractionResponse(
             type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data=types.InteractionCallbackDataMessages(
+            data=types.InteractionCallbackDataMessage(
                 content="Hello from sub-1!"
             )
         )
     sub_1.description = "sub-1"
 
     @command.subcommand("sub-2")
-    def sub_2(interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def sub_2(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return types.InteractionResponse(
             type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data=types.InteractionCallbackDataMessages(
+            data=types.InteractionCallbackDataMessage(
                 content="Hello from sub-2!"
             )
         )
@@ -68,20 +69,20 @@ with discord.command("slash-group") as command:
     with command.group("group-1") as group:
         group.description = "Group description"
         @group.subcommand("sub-3")
-        def sub_3(interaction: types.ChatInteraction) -> types.InteractionResponse:
+        def sub_3(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
             return types.InteractionResponse(
                 type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data=types.InteractionCallbackDataMessages(
+                data=types.InteractionCallbackDataMessage(
                     content="Hello from sub-3!"
                 )
             )
         sub_3.description = "sub-3"
 
         @group.subcommand("sub-4")
-        def sub_4(interaction: types.ChatInteraction) -> types.InteractionResponse:
+        def sub_4(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
             return types.InteractionResponse(
                 type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data=types.InteractionCallbackDataMessages(
+                data=types.InteractionCallbackDataMessage(
                     content="Hello from sub-4!"
                 )
             )

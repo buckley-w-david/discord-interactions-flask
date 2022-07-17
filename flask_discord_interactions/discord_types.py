@@ -154,7 +154,9 @@ class Message(BaseModel):
     author: dict  # user object the author of this message (not guaranteed to be a valid user, see below)
     content: str  # contents of the message
     timestamp: str  # ISO8601 timestamp when this message was sent
-    edited_timestamp: str  # ISO8601 timestamp when this message was edited (or null if never)
+    edited_timestamp: Optional[
+        str
+    ]  # ISO8601 timestamp when this message was edited (or null if never)
     tts: bool  # whether this was a TTS message
     mention_everyone: bool  # whether this message mentions everyone
     mentions: List[
@@ -195,7 +197,7 @@ class Message(BaseModel):
     ] = None  # message object # the message associated with the message_reference
     # This is that weird WTF type I have commented out near the bottom
     interaction: Optional[
-        dict
+        "MessageInteraction"
     ] = None  # message interaction object # sent if the message is a response to an Interaction
     thread: Optional[
         dict
@@ -330,14 +332,6 @@ class InteractionData(BaseModel):
     ] = None  # snowflake	id of the user or message targeted by a user or message command
 
 
-# TODO: These can have their own definition
-ChatData = InteractionData
-UserData = InteractionData
-MessageData = InteractionData
-# If we do give them their own definition
-# InteractionData = Union[ChatData, UserData, MessageData]
-
-
 @dataclass
 class Interaction(BaseModel):
     id: Snowflake  # 	snowflake	ID of the interaction
@@ -372,24 +366,6 @@ class Interaction(BaseModel):
 
 
 @dataclass
-class ChatInteraction(Interaction):
-    data: ChatData
-
-
-@dataclass
-class UserInteraction(Interaction):
-    data: UserData
-
-
-@dataclass
-class MessageInteraction(Interaction):
-    data: MessageData
-
-
-CommandInteraction = Union[ChatInteraction, UserInteraction, MessageInteraction]
-
-
-@dataclass
 class SelectOption(BaseModel):
     label: str  # string	the user-facing name of the option, max 100 characters
     value: str  # string	the dev-defined value of the option, max 100 characters
@@ -417,15 +393,21 @@ class ModalSubmit(BaseModel):
     ]  # array of message components	the values submitted by the user
 
 
-# This is sent on the message object when the message is a response to an Interaction without an existing message.
-# TODO: WTF does the above sentence mean?
-# @dataclass
-# class MessageInteraction(BaseModel):
-#     id: Snowflake # snowflake	ID of the interaction
-#     type: InteractionType # interaction type	Type of interaction
-#     name: str # string	Name of the application command, including subcommands and subcommand groups
-#     user: str # user object	User who invoked the interaction
-#     member: Optional[dict] # partial member object	Member who invoked the interaction in the guild
+# > This is sent on the message object when the message is a response to an Interaction without an existing message.
+# WTF is that word soup
+# This is the object that comes in the message.interaction field
+
+
+@dataclass
+class MessageInteraction(BaseModel):
+    id: Snowflake  # snowflake	ID of the interaction
+    name: str  # string	Name of the application command, including subcommands and subcommand groups
+    type: InteractionType  # interaction type	Type of interaction
+    user: dict  # user object	User who invoked the interaction
+    member: Optional[
+        dict
+    ]  # partial member object	Member who invoked the interaction in the guild
+
 
 # TODO: Components
 # Should the type: Literal[...] properties default to their thing?
@@ -434,26 +416,24 @@ class ModalSubmit(BaseModel):
 
 @dataclass
 class Button(BaseModel):
-    type: Literal[ComponentType.BUTTON]  # integer	2 for a button
     style: ButtonStyle  # integer	one of button styles
-    label: Optional[
-        str
-    ] = None  # string	text that appears on the button, max 80 characters
+    custom_id: str  # string	a developer-defined identifier for the button, max 100 characters
+    label: str  # string	text that appears on the button, max 80 characters
+    type: Literal[ComponentType.BUTTON] = ComponentType.BUTTON  # integer	2 for a button
     emoji: Optional[Emoji] = None  # partial emoji	name, id, and animated
-    custom_id: Optional[
-        str
-    ] = None  # string	a developer-defined identifier for the button, max 100 characters
     url: Optional[str] = None  # string	a url for link-style buttons
     disabled: bool = False  # boolean	whether the button is disabled (default false)
 
 
 @dataclass
 class SelectMenu(BaseModel):
-    type: Literal[ComponentType.SELECT_MENU]  # integer	3 for a select menu
     custom_id: str  # string	a developer-defined identifier for the select menu, max 100 characters
     options: List[
         SelectOption
     ]  # array of select options	the choices in the select, max 25
+    type: Literal[
+        ComponentType.SELECT_MENU
+    ] = ComponentType.SELECT_MENU  # integer	3 for a select menu
     placeholder: Optional[
         str
     ] = None  # string	custom placeholder text if nothing is selected, max 150 characters
@@ -468,10 +448,12 @@ class SelectMenu(BaseModel):
 
 @dataclass
 class TextInput(BaseModel):
-    type: Literal[ComponentType.TEXT_INPUT]  # integer	4 for a text input
     custom_id: str  # string	a developer-defined identifier for the input, max 100 characters
     style: TextInputStyle  # integer	the Text Input Style
     label: str  # string	the label for this component, max 45 characters
+    type: Literal[
+        ComponentType.TEXT_INPUT
+    ] = ComponentType.TEXT_INPUT  # integer	4 for a text input
     min_length: Optional[
         int
     ] = None  # integer	the minimum input length for a text input, min 0, max 4000
@@ -494,15 +476,26 @@ InteractiveComponent = Union[Button, SelectMenu, TextInput]
 
 @dataclass
 class ActionRow(BaseModel):
-    type: Literal[ComponentType.ACTION_ROW]  # integer	1 for a action row
     components: List[InteractiveComponent]
+    type: Literal[
+        ComponentType.ACTION_ROW
+    ] = ComponentType.ACTION_ROW  # integer	1 for a action row
 
 
 Component = Union[ActionRow, InteractiveComponent]
 
 
 @dataclass
-class InteractionCallbackDataMessages(BaseModel):
+class Modal(BaseModel):
+    custom_id: str  # a developer-defined identifier for the component, max 100 characters
+    title: str  # the title of the popup modal, max 45 characters
+    components = List[
+        TextInput
+    ]  # between 1 and 5 (inclusive) components that make up the modal
+
+
+@dataclass
+class InteractionCallbackDataMessage(BaseModel):
     tts: Optional[bool] = None  # boolean	is the response TTS
     content: Optional[str] = None  # string	message content
     embeds: Optional[List[dict]] = None  # array of embeds	supports up to 10 embeds
@@ -533,7 +526,7 @@ class InteractionCallbackDataModal(BaseModel):
 
 
 InteractionCallbackData = Union[
-    InteractionCallbackDataMessages,
+    InteractionCallbackDataMessage,
     InteractionCallbackDataAutocomplete,
     InteractionCallbackDataModal,
 ]

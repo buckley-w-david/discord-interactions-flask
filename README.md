@@ -11,6 +11,7 @@ from flask import Flask
 
 from flask_discord_interactions import Discord
 from flask_discord_interactions import discord_types as types
+from flask_discord_interactions.interactions ChatInteraction
 
 app = Flask(__name__)
 app.config['DISCORD_PUBLIC_KEY'] = os.environ['DISCORD_PUBLIC_KEY']
@@ -20,11 +21,11 @@ app.config['DISCORD_CLIENT_SECRET'] = os.environ['DISCORD_CLIENT_SECRET']
 discord = Discord()
 
 @discord.command("slash-example")
-def chat_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+def chat_command(interaction: ChatInteraction) -> types.InteractionResponse:
     return types.InteractionResponse(
             type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                    data=types.InteractionCallbackDataMessages(
-            data=types.InteractionCallbackDataMessages(
+                    data=types.InteractionCallbackDataMessage(
+            data=types.InteractionCallbackDataMessage(
                 content="Hello, World!"
             )
         )

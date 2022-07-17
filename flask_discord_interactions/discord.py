@@ -49,7 +49,7 @@ class Discord:
         .. code-block:: python
 
             @discord.command()
-            def command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+            def command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
                 return ...
 
         Args
@@ -91,11 +91,11 @@ class Discord:
                 case types.InteractionType.APPLICATION_COMMAND:
                     match payload["data"]["type"]:
                         case types.CommandType.CHAT:
-                            interaction = types.ChatInteraction.load(payload)
+                            interaction = interactions.ChatInteraction.load(payload)
                         case types.CommandType.USER:
-                            interaction = types.UserInteraction.load(payload)
+                            interaction = interactions.UserInteraction.load(payload)
                         case types.CommandType.MESSAGE:
-                            interaction = types.MessageInteraction.load(payload)
+                            interaction = interactions.MessageInteraction.load(payload)
                         case _:
                             raise ValueError("WTF Discord?")
 

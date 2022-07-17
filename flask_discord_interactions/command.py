@@ -5,6 +5,7 @@ import jsons
 
 from flask_discord_interactions.discord_types import CommandType
 from flask_discord_interactions import discord_types as types
+from flask_discord_interactions import interactions
 
 
 class ChatCommand:
@@ -26,7 +27,7 @@ class ChatCommand:
             "options": [jsons.dump(o, use_enum_name=False) for o in self.options],
         }
 
-    def __call__(self, interaction: types.ChatInteraction):
+    def __call__(self, interaction: interactions.ChatInteraction):
         return self.func(interaction)
 
 
@@ -51,7 +52,9 @@ class CommandGroup:
             "options": [sc.spec() for (_, sc) in self.subcommands.items()],
         }
 
-    def __call__(self, interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def __call__(
+        self, interaction: interactions.ChatInteraction
+    ) -> types.InteractionResponse:
         if not interaction.data.options:
             raise ValueError("This should be impossible")
 
@@ -80,7 +83,9 @@ class ChatMetaCommand:
             "options": [child.spec() for (_, child) in self.children.items()],
         }
 
-    def __call__(self, interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def __call__(
+        self, interaction: interactions.ChatInteraction
+    ) -> types.InteractionResponse:
         if not interaction.data.options:
             raise ValueError("Expected meta command to have a group or subcommand")
 
@@ -104,7 +109,7 @@ class UserCommand:
             "type": CommandType.USER,
         }
 
-    def __call__(self, interaction: types.UserInteraction):
+    def __call__(self, interaction: interactions.UserInteraction):
         return self.func(interaction)
 
 
@@ -120,7 +125,7 @@ class MessageCommand:
             "type": CommandType.MESSAGE,
         }
 
-    def __call__(self, interaction: types.MessageInteraction):
+    def __call__(self, interaction: interactions.MessageInteraction):
         return self.func(interaction)
 
 

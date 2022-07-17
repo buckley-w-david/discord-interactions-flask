@@ -17,6 +17,7 @@ This is the finished product for our example bot. We'll go through it step by st
 
     from flask_discord_interactions import Discord
     from flask_discord_interactions import discord_types as types
+    from flask_discord_interactions import interactions
 
     app = Flask(__name__)
     app.config['DISCORD_PUBLIC_KEY'] = os.environ['DISCORD_PUBLIC_KEY']
@@ -26,11 +27,11 @@ This is the finished product for our example bot. We'll go through it step by st
     discord = Discord()
 
     @discord.command("slash-example")
-    def chat_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def chat_command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return types.InteractionResponse(
                 type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                        data=types.InteractionCallbackDataMessages(
-                data=types.InteractionCallbackDataMessages(
+                        data=types.InteractionCallbackDataMessage(
+                data=types.InteractionCallbackDataMessage(
                     content="Hello, World!"
                 )
             )
@@ -80,29 +81,29 @@ In order to define our commands, we need a :ref:`Discord` instance.
 .. code-block:: python
 
     @discord.command("slash-example")
-    def chat_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def chat_command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         ...
 
 There's actually a lot going on in this little snippet.
 
-:code:`@discord.command("slack-example")` applies a decorator to the :code:`chat_command` function. This decorator knows how to construct the correct type of command based on the functions type hints. This function has declared that it takes a :class:`~flask_discord_interactions.discord_types.ChatInteraction` parameter, and based on that the library knows to construct a `Slash Command <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
+:code:`@discord.command("slack-example")` applies a decorator to the :code:`chat_command` function. This decorator knows how to construct the correct type of command based on the functions type hints. This function has declared that it takes a :class:`~flask_discord_interactions.interactions.ChatInteraction` parameter, and based on that the library knows to construct a `Slash Command <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
 
 Since a name was passed to :meth:`~flask_discord_interactions.discord.Discord.command`, that name will be used to trigger the action, in this case "/slack-example". If no name was given, it would default to the functions name: "chat_command".
 
 .. code-block:: python
 
-    def chat_command(interaction: types.ChatInteraction) -> types.InteractionResponse:
+    def chat_command(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return types.InteractionResponse(
                 type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-                        data=types.InteractionCallbackDataMessages(
-                data=types.InteractionCallbackDataMessages(
+                        data=types.InteractionCallbackDataMessage(
+                data=types.InteractionCallbackDataMessage(
                     content="Hello, World!"
                 )
             )
 
 As of the current version of the project, this is where the convenience features end. 
 
-1. The command is passed a :class:`flask_discord_interactions.discord_types.ChatInteraction` instance. This is a just the data we were sent from discord, serialized into a :class:`~dataclasses.dataclass`.
+1. The command is passed a :class:`flask_discord_interactions.interactions.ChatInteraction` instance. This is a just the data we were sent from discord, serialized into a :class:`~dataclasses.dataclass`.
 
 2. A command must return an :class:`flask_discord_interactions.discord_types.InteractionResponse` instance, and you must construct this manually.
 
