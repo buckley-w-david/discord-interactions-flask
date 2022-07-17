@@ -147,6 +147,7 @@ class MessageType(enum.IntEnum):
 # TODO :s/dict/RealType/g
 
 
+# TODO: This should probably be defined farther down
 @dataclass
 class Message(BaseModel):
     id: Snowflake  # id of the message
@@ -195,7 +196,6 @@ class Message(BaseModel):
     referenced_message: Optional[
         "Message"
     ] = None  # message object # the message associated with the message_reference
-    # This is that weird WTF type I have commented out near the bottom
     interaction: Optional[
         "MessageInteraction"
     ] = None  # message interaction object # sent if the message is a response to an Interaction
@@ -314,58 +314,6 @@ class ApplicationCommandOption(BaseModel):
 
 
 @dataclass
-class InteractionData(BaseModel):
-    id: Snowflake  # snowflake	the ID of the invoked command
-    name: str  # string	the name of the invoked command
-    type: CommandType  # integer	the type of the invoked command
-    resolved: Optional[
-        Resolved
-    ] = None  # resolved data	converted users + roles + channels + attachments
-    options: Optional[
-        List[ApplicationCommandInteractionDataOption]
-    ] = None  # array of application command interaction data option	the params + values from the user
-    guild_id: Optional[
-        str
-    ] = None  # snowflake	the id of the guild the command is registered to
-    target_id: Optional[
-        str
-    ] = None  # snowflake	id of the user or message targeted by a user or message command
-
-
-@dataclass
-class Interaction(BaseModel):
-    id: Snowflake  # 	snowflake	ID of the interaction
-    application_id: Snowflake  # 	snowflake	ID of the application this interaction is for
-    type: InteractionType  # 	interaction type	Type of interaction
-    token: str  # 	string	Continuation token for responding to the interaction
-    version: int  # 	integer	Read-only property, always 1
-    guild_id: Optional[
-        Snowflake
-    ] = None  # 	snowflake	Guild that the interaction was sent from
-    channel_id: Optional[
-        Snowflake
-    ] = None  # 	snowflake	Channel that the interaction was sent from
-    member: Optional[
-        dict
-    ] = None  # 	guild member object	Guild member data for the invoking user, including permissions
-    user: Optional[
-        dict
-    ] = None  # 	user object	User object for the invoking user, if invoked in a DM
-    message: Optional[
-        Message
-    ] = None  # 	message object	For components, the message they were attached to
-    app_permissions: Optional[
-        str
-    ] = None  # 	string	Bitwise set of permissions the app or bot has within the channel the interaction was sent from
-    locale: Optional[str] = None  # 	string	Selected language of the invoking user
-    guild_locale: Optional[
-        str
-    ] = None  # 	Guild's preferred locale, if invoked in a guild
-    # Expected to be overridden in child classes
-    data: Optional[dict] = None  # 	interaction data	Interaction data payload
-
-
-@dataclass
 class SelectOption(BaseModel):
     label: str  # string	the user-facing name of the option, max 100 characters
     value: str  # string	the dev-defined value of the option, max 100 characters
@@ -393,6 +341,60 @@ class ModalSubmit(BaseModel):
     ]  # array of message components	the values submitted by the user
 
 
+@dataclass
+class InteractionData(BaseModel):
+    id: Snowflake  # snowflake	the ID of the invoked command
+    name: str  # string	the name of the invoked command
+    type: CommandType  # integer	the type of the invoked command
+    resolved: Optional[
+        Resolved
+    ] = None  # resolved data	converted users + roles + channels + attachments
+    options: Optional[
+        List[ApplicationCommandInteractionDataOption]
+    ] = None  # array of application command interaction data option	the params + values from the user
+    guild_id: Optional[
+        Snowflake
+    ] = None  # snowflake	the id of the guild the command is registered to
+    target_id: Optional[
+        Snowflake
+    ] = None  # snowflake	id of the user or message targeted by a user or message command
+
+
+# This structure does not map to PING requests, due to `data`
+@dataclass
+class Interaction(BaseModel):
+    id: Snowflake  # 	snowflake	ID of the interaction
+    application_id: Snowflake  # 	snowflake	ID of the application this interaction is for
+    type: InteractionType  # 	interaction type	Type of interaction
+    token: str  # 	string	Continuation token for responding to the interaction
+    version: int  # 	integer	Read-only property, always 1
+    data: Union[
+        InteractionData, MessageComponent, ModalSubmit
+    ]  # 	interaction data	Interaction data payload
+    guild_id: Optional[
+        Snowflake
+    ] = None  # 	snowflake	Guild that the interaction was sent from
+    channel_id: Optional[
+        Snowflake
+    ] = None  # 	snowflake	Channel that the interaction was sent from
+    member: Optional[
+        dict
+    ] = None  # 	guild member object	Guild member data for the invoking user, including permissions
+    user: Optional[
+        dict
+    ] = None  # 	user object	User object for the invoking user, if invoked in a DM
+    message: Optional[
+        Message
+    ] = None  # 	message object	For components, the message they were attached to
+    app_permissions: Optional[
+        str
+    ] = None  # 	string	Bitwise set of permissions the app or bot has within the channel the interaction was sent from
+    locale: Optional[str] = None  # 	string	Selected language of the invoking user
+    guild_locale: Optional[
+        str
+    ] = None  # 	Guild's preferred locale, if invoked in a guild
+
+
 # > This is sent on the message object when the message is a response to an Interaction without an existing message.
 # WTF is that word soup
 # This is the object that comes in the message.interaction field
@@ -407,11 +409,6 @@ class MessageInteraction(BaseModel):
     member: Optional[
         dict
     ]  # partial member object	Member who invoked the interaction in the guild
-
-
-# TODO: Components
-# Should the type: Literal[...] properties default to their thing?
-# Should the type: Literal[...] properties just not exist?
 
 
 @dataclass
@@ -504,7 +501,7 @@ class InteractionCallbackDataMessage(BaseModel):
         int
     ] = None  # integer	message flags combined as a bitfield (only SUPPRESS_EMBEDS and EPHEMERAL can be set)
     components: Optional[
-        List[Component]
+        List[ActionRow]
     ] = None  # array of components	message components
     attachments: Optional[
         List[dict]
