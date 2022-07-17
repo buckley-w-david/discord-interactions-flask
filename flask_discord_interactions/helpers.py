@@ -1,3 +1,4 @@
+from typing import Optional
 from flask_discord_interactions.discord_types import (
     InteractionResponse,
     InteractionCallbackType,
@@ -5,8 +6,8 @@ from flask_discord_interactions.discord_types import (
 )
 
 
-def content_response(content: str) -> InteractionResponse:
+def content_response(content: str, flags: Optional[int] = None) -> InteractionResponse:
     return InteractionResponse(
         type=InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data=InteractionCallbackDataMessage(content=content),
+        data=InteractionCallbackDataMessage(content=content, flags=flags),
     )

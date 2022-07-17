@@ -40,19 +40,23 @@ OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
 
 
 def _missing_component_handler(
-    interaction: ComponentInteraction,
+    _: ComponentInteraction,
 ) -> types.InteractionResponse:
-    return helpers.content_response(
-        ":warning: Sorry, that component has expired! :warning:"
+    resp = helpers.content_response(
+        ":warning: Sorry, that component has expired! :warning:",
+        flags=types.MessageFlags.EPHEMERAL,
     )
+    return resp
 
 
 def _missing_command_handler(
-    interaction: CommandInteraction,
+    _: CommandInteraction,
 ) -> types.InteractionResponse:
-    return helpers.content_response(
-        ":warning: Sorry, I don't understand that command! :warning:"
+    resp = helpers.content_response(
+        ":warning: Sorry, I don't understand that command! :warning:",
+        flags=types.MessageFlags.EPHEMERAL,
     )
+    return resp
 
 
 class Discord:
