@@ -3,7 +3,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 import inspect
 import logging
-from typing import Callable, Optional, Union, Dict, cast
+from typing import Callable, Optional, Union, cast, TYPE_CHECKING
+
 
 from flask_discord_interactions import discord_types as types
 from flask_discord_interactions.command import (
@@ -16,6 +17,10 @@ from flask_discord_interactions.command import (
 )
 from flask_discord_interactions import interactions
 
+if TYPE_CHECKING:
+    from flask_discord_interactions.discord import Discord
+
+
 logger = logging.getLogger(__name__)
 
 COMMANDS = {
@@ -23,10 +28,6 @@ COMMANDS = {
     interactions.UserInteraction: UserCommand,
     interactions.MessageInteraction: MessageCommand,
 }
-
-GLOBAL_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/commands"
-GUILD_URL_TEMPLATE = "https://discord.com/api/v10/applications/%s/guilds/%s/commands"
-OAUTH_ENDPOINT = "https://discord.com/api/v10/oauth2/token"
 
 ChatFunction = Callable[[interactions.ChatInteraction], types.InteractionResponse]
 UserFunction = Callable[[interactions.UserInteraction], types.InteractionResponse]
@@ -43,17 +44,19 @@ class CommandBuilder:
 
     def __init__(
         self,
-        commands: Dict,
+        discord: 'Discord',
         name: Optional[str],
+        guild_id: Optional[str],
     ):
         """Initialize :class:`CommandBuilder`.
 
         Args
-            commands: A reference to a dict of commands tracked in :class:`flask_discord_interactions.discord.Discord`.
+            discord: A reference to a :class:`flask_discord_interactions.discord.Discord`.
             name: An optional name to use for the command. If not present the command functions name will be used.
         """
-        self.commands = commands
+        self.discord = discord
         self.name = name
+        self.guild_id = guild_id
 
         self.context = {}
 
@@ -79,7 +82,7 @@ class CommandBuilder:
         else:
             name = f.__name__
         command = command_class(name, f)
-        self.commands[name] = command
+        self.discord.add_command(name, command, self.guild_id)
         return command
 
     def subcommand(
@@ -188,9 +191,10 @@ class CommandBuilder:
                 else:
                     children[name] = child
 
+            assert self.name is not None
             meta_command = ChatMetaCommand(
-                name=cast(str, self.name),
+                name=self.name,
                 children=children,
                 description=self.context.get("__description", ""),
             )
-            self.commands[self.name] = meta_command
+            self.discord.add_command(self.name, meta_command, self.guild_id)

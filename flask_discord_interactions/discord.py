@@ -19,6 +19,7 @@ from flask_discord_interactions import discord_types as types
 from flask_discord_interactions.verify import verify_key_decorator
 from flask_discord_interactions.command_builder import CommandBuilder
 from flask_discord_interactions.command import Command
+from flask_discord_interactions import errors
 from flask_discord_interactions.interactions import (
     ChatInteraction,
     UserInteraction,
@@ -69,9 +70,12 @@ class Discord:
         missing_component_handler=_missing_component_handler,
     ):
         """Initialzation."""
+
+        # FIXME: I don't love this guild/global/runtime dic approach
         self.guild_commands: defaultdict[str, dict[str, Command]] = defaultdict(dict)
         self.global_commands: dict[str, Command] = {}
         self.runtime_commands: dict[str, Command] = {}
+
         # TODO: evict old handlers
         self.component_handlers: defaultdict[
             str, dict[str, components.Component]
@@ -80,6 +84,7 @@ class Discord:
         self.missing_command_handler = missing_command_handler
         self.missing_component_handler = missing_component_handler
         self.http = urllib3.PoolManager(headers={"Content-Type": "application/json"})
+        self.public_key = None
         if app:
             self.init_app(app)
 
@@ -104,20 +109,11 @@ class Discord:
         Returns
             A :class:`CommandBuilder` instance that can be used as a decorator or context manager.
         """
-        if guild_id:
-            commands = self.guild_commands[guild_id]
-        else:
-            commands = self.global_commands
-        return CommandBuilder(commands, name)
+        return CommandBuilder(self, name, guild_id)
 
     def _handle_response(
         self, interaction: types.Interaction, response: types.InteractionResponse
     ):
-        print(
-            response.dump(
-                use_enum_name=False, strip_privates=True, strip_properties=True
-            )
-        )
         if response.data and response.data.components:
             for row in response.data.components:
                 for component in row.components:
@@ -148,8 +144,7 @@ class Discord:
         @verify_key_decorator(self.public_key)
         def interactions():
             payload = request.json
-            if not payload:
-                raise
+            assert payload is not None
 
             match payload["type"]:
                 case types.InteractionType.PING:
@@ -166,7 +161,10 @@ class Discord:
                         case types.CommandType.MESSAGE:
                             command_interaction = MessageInteraction.load(payload)
                         case _:
-                            raise ValueError("WTF Discord?")
+                            raise errors.FlaskDiscordInteractionsError(
+                                "Discord sent an invalid command type - %s"
+                                % payload["data"]["type"]
+                            )
 
                     handler = self.runtime_commands.get(command_interaction.data.id)
                     if not handler:
@@ -187,9 +185,12 @@ class Discord:
                         case types.ComponentType.TEXT_INPUT:
                             component_interaction = TextInputInteraction.load(payload)
                         case _:
-                            raise ValueError("WTF Discord?")
+                            raise errors.FlaskDiscordInteractionsError(
+                                "Discord sent an invalid component type - %s"
+                                % payload["data"]["type"]
+                            )
 
-                    # It's interesting that typing errors have pushed my to explicitly define my invariants
+                    # It's interesting that typing errors have pushed me to explicitly define my invariants
                     assert component_interaction.message is not None
                     assert component_interaction.message.interaction is not None
 
@@ -210,7 +211,7 @@ class Discord:
         app.register_blueprint(interactions_bp)
         self.init_commands(app)
 
-    def refresh_token(self):
+    def _refresh_token(self):
         """Refresh the OAuth2 client credentials used to interact with the Discord API. Typically not something a user is expected to need."""
         r = self.http.request(
             "POST",
@@ -224,13 +225,12 @@ class Discord:
             ),
             encode_multipart=False,
         )
-        # r.raise_for_status()
         token = json.loads(r.data.decode("utf-8"))
         self.http.headers[
             "Authorization"
         ] = f"{token['token_type']} {token['access_token']}"
 
-    def create_command(
+    def _create_command(
         self, command: Command, guild_id: Optional[str] = None
     ) -> types.ApplicationCommand:
         """Push the :class:`Command` to the Discord application indicated by the DISCORD_CLIENT_ID key.
@@ -247,8 +247,39 @@ class Discord:
         resp = self.http.request(
             "POST", url, body=json.dumps(command.spec()).encode("utf-8")
         )
-        interaction_payload = json.loads(resp.data.decode("utf-8"))
-        return types.ApplicationCommand.load(interaction_payload)
+        if resp.status == http.HTTPStatus.OK or resp.status == http.HTTPStatus.CREATED:
+            interaction_payload = json.loads(resp.data.decode("utf-8"))
+            return types.ApplicationCommand.load(interaction_payload)
+        else:
+            raise errors.DiscordApiError(resp.data.decode("utf-8"))
+
+    def add_command(
+        self, name: str, command: Command, guild_id: Optional[str] = None
+    ) -> None:
+        if guild_id:
+            self.guild_commands[guild_id][name] = command
+        else:
+            self.global_commands[name] = command
+
+        # If we're already initialized, we send the command to discord right away
+        if self.public_key is not None:
+            interaction = self._create_command(command, guild_id)
+            self.runtime_commands[interaction.id] = command
+
+    def remove_command(
+        self, interaction_id: str, guild_id: Optional[str] = None
+    ) -> None:
+        if guild_id:
+            url = GUILD_URL_TEMPLATE % (self.client_id, guild_id)
+        else:
+            url = GLOBAL_URL_TEMPLATE % self.client_id
+
+        url += f"/{interaction_id}"
+        del self.runtime_commands[interaction_id]
+
+        resp = self.http.request("DELETE", url)
+        if resp.status != http.HTTPStatus.NO_CONTENT:
+            raise errors.DiscordApiError(resp.data.decode("utf-8"))
 
     def init_commands(self, app: Flask):
         """Sync the :class:`Command` s configured with this :class:`Discord` instance to the Discord application indicated by the DISCORD_CLIENT_ID key.
@@ -273,13 +304,13 @@ class Discord:
             )
             return
 
-        self.refresh_token()
+        self._refresh_token()
 
         for (guild_id, commands) in self.guild_commands.items():
             for (_, command) in commands.items():
-                interaction = self.create_command(command, guild_id)
+                interaction = self._create_command(command, guild_id)
                 self.runtime_commands[interaction.id] = command
 
         for (_, command) in self.global_commands.items():
-            interaction = self.create_command(command)
+            interaction = self._create_command(command)
             self.runtime_commands[interaction.id] = command

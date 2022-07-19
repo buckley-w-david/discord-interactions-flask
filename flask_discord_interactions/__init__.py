@@ -24,6 +24,8 @@ from flask_discord_interactions.interactions import (
 #       I would have to break out each command type into separate dicts
 # TODO: There should be a mechanism to opt-out of automatically init_commands-ing
 # TODO: How do modals work?
+# TODO: Should we attempt to persist component handlers across invocations? It would likely require pickeling the functions and storing them somewhere
+# TODO: Enable dynamically creating commands at runtime somehow
 
 # TODO: Better ergonomics on response
 # 1. A command should be able to just return a str to make the simple case easy
