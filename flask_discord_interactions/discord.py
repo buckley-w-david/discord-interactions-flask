@@ -194,13 +194,13 @@ class Discord:
                     assert component_interaction.message is not None
                     assert component_interaction.message.interaction is not None
 
-                    handler = self.component_handlers[
+                    handlers = self.component_handlers.get(
                         component_interaction.message.interaction.id
-                    ].get(component_interaction.data.custom_id)
-                    if not handler:
+                    )
+                    if not handlers or component_interaction.data.custom_id not in handlers:
                         result = self.missing_component_handler(component_interaction)
                     else:
-                        result = handler(component_interaction)
+                        result = handlers[component_interaction.data.custom_id](component_interaction)
 
                     return self._handle_response(component_interaction, result)
                 case _:
