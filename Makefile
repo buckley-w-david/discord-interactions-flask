@@ -1,4 +1,4 @@
-.PHONY: test build publish build-docs
+.PHONY: test build publish docs
 
 test:
 	pytest
