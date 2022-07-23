@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Union, Dict, cast
+from typing import Union, Dict
 import jsons
 
 from discord_interactions_flask.discord_types import CommandType

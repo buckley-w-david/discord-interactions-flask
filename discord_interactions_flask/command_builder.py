@@ -3,7 +3,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 import inspect
 import logging
-from typing import Callable, Optional, Union, cast, TYPE_CHECKING
+from typing import Callable, Optional, Union, TYPE_CHECKING
 
 
 from discord_interactions_flask import discord_types as types
@@ -20,8 +20,6 @@ from discord_interactions_flask import interactions
 if TYPE_CHECKING:
     from discord_interactions_flask.discord import Discord
 
-
-logger = logging.getLogger(__name__)
 
 COMMANDS = {
     interactions.ChatInteraction: ChatCommand,
