@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Union, List
 
-from flask_discord_interactions.discord_types import (
+from discord_interactions_flask.discord_types import (
     Interaction,
     InteractionData,
     MessageComponent,

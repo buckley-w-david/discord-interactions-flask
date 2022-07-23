@@ -1,17 +1,17 @@
-# flask-discord-interactions
+# discord-interactions-flask
 
 A [Flask](https://github.com/pallets/flask/) extension to support interacting with [Discord Interactions](https://discord.com/developers/docs/interactions/application-commands).
 
-Check out the [quickstart](https://docs.davidbuckley.ca/flask-discord-interactions/usage/quickstart.html) or the [examples directory](/examples) for an idea of how to use it.
+Check out the [quickstart](https://docs.davidbuckley.ca/discord-interactions-flask/usage/quickstart.html) or the [examples directory](/examples) for an idea of how to use it.
 
 ```python
 import os
 
 from flask import Flask
 
-from flask_discord_interactions import Discord
-from flask_discord_interactions import helpers
-from flask_discord_interactions.interactions ChatInteraction
+from discord_interactions_flask import Discord
+from discord_interactions_flask import helpers
+from discord_interactions_flask.interactions ChatInteraction
 
 app = Flask(__name__)
 app.config['DISCORD_PUBLIC_KEY'] = os.environ['DISCORD_PUBLIC_KEY']

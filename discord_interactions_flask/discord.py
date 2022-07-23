@@ -15,12 +15,12 @@ from flask import Blueprint, Flask, jsonify, request
 
 import urllib3
 
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions.verify import verify_key_decorator
-from flask_discord_interactions.command_builder import CommandBuilder
-from flask_discord_interactions.command import Command
-from flask_discord_interactions import errors
-from flask_discord_interactions.interactions import (
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask.verify import verify_key_decorator
+from discord_interactions_flask.command_builder import CommandBuilder
+from discord_interactions_flask.command import Command
+from discord_interactions_flask import errors
+from discord_interactions_flask.interactions import (
     ChatInteraction,
     UserInteraction,
     MessageInteraction,
@@ -30,8 +30,8 @@ from flask_discord_interactions.interactions import (
     ComponentInteraction,
     CommandInteraction,
 )
-from flask_discord_interactions import helpers
-from flask_discord_interactions import components
+from discord_interactions_flask import helpers
+from discord_interactions_flask import components
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class Discord:
             self.init_app(app)
 
     def command(
-        self, name: Optional[str] = None, guild_id: Optional[str] = None
+            self, name: Optional[str] = None, description: Optional[str] = None, guild_id: Optional[str] = None
     ) -> CommandBuilder:
         """Define a new command.
 
@@ -104,12 +104,13 @@ class Discord:
 
         Args
             name: An optional name to give the command. If not given the function name will be used.
+            description: An optional description to give the command. If not given the name will be used.
             guild_id: An optional guild_id. If given the command will be created in just that guild.
 
         Returns
             A :class:`CommandBuilder` instance that can be used as a decorator or context manager.
         """
-        return CommandBuilder(self, name, guild_id)
+        return CommandBuilder(self, name, description, guild_id)
 
     def _handle_response(
         self, interaction: types.Interaction, response: types.InteractionResponse
@@ -161,7 +162,7 @@ class Discord:
                         case types.CommandType.MESSAGE:
                             command_interaction = MessageInteraction.load(payload)
                         case _:
-                            raise errors.FlaskDiscordInteractionsError(
+                            raise errors.DiscordInteractionsFlaskError(
                                 "Discord sent an invalid command type - %s"
                                 % payload["data"]["type"]
                             )
@@ -185,7 +186,7 @@ class Discord:
                         case types.ComponentType.TEXT_INPUT:
                             component_interaction = TextInputInteraction.load(payload)
                         case _:
-                            raise errors.FlaskDiscordInteractionsError(
+                            raise errors.DiscordInteractionsFlaskError(
                                 "Discord sent an invalid component type - %s"
                                 % payload["data"]["type"]
                             )
@@ -317,7 +318,7 @@ class Discord:
         if not self.commands:
             logger.warning(
                 "Running init_commands with no commands defined!\n"
-                "If you would like flask-discord-interactions to automatically push commands to Discord you will "
+                "If you would like discord-interactions-flask to automatically push commands to Discord you will "
                 "need to run `init_commands` _after_ defining your commands",
                 self,
             )

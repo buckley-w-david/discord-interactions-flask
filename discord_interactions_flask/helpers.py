@@ -1,5 +1,5 @@
 from typing import Optional
-from flask_discord_interactions.discord_types import (
+from discord_interactions_flask.discord_types import (
     InteractionResponse,
     InteractionCallbackType,
     InteractionCallbackDataMessage,

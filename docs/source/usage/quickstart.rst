@@ -15,9 +15,9 @@ This is the finished product for our example bot. We'll go through it step by st
 
     from flask import Flask
 
-    from flask_discord_interactions import Discord
-    from flask_discord_interactions import discord_types as types
-    from flask_discord_interactions import interactions
+    from discord_interactions_flask import Discord
+    from discord_interactions_flask import discord_types as types
+    from discord_interactions_flask import interactions
 
     app = Flask(__name__)
     app.config['DISCORD_PUBLIC_KEY'] = os.environ['DISCORD_PUBLIC_KEY']
@@ -47,14 +47,14 @@ First, the imports.
 
     from flask import Flask
 
-    from flask_discord_interactions import Discord
-    from flask_discord_interactions import discord_types as types
+    from discord_interactions_flask import Discord
+    from discord_interactions_flask import discord_types as types
 
 1. :code:`os` is imported for environment variables.
 
 2. :code:`flask.Flask` is imported because shockingly we need flask for our flask extension.
 
-3. :code:`flask_discord_interactions.Discord` and :code:`flask_discord_interactions.discord_types` are what we're going to use to define out bots behaviour.
+3. :code:`discord_interactions_flask.Discord` and :code:`discord_interactions_flask.discord_types` are what we're going to use to define out bots behaviour.
 
 Next, initializing our :code:`Flask` app.
 
@@ -86,9 +86,9 @@ In order to define our commands, we need a :ref:`Discord` instance.
 
 There's actually a lot going on in this little snippet.
 
-:code:`@discord.command("slack-example")` applies a decorator to the :code:`chat_command` function. This decorator knows how to construct the correct type of command based on the functions type hints. This function has declared that it takes a :class:`~flask_discord_interactions.interactions.ChatInteraction` parameter, and based on that the library knows to construct a `Slash Command <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
+:code:`@discord.command("slack-example")` applies a decorator to the :code:`chat_command` function. This decorator knows how to construct the correct type of command based on the functions type hints. This function has declared that it takes a :class:`~discord_interactions_flask.interactions.ChatInteraction` parameter, and based on that the library knows to construct a `Slash Command <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
 
-Since a name was passed to :meth:`~flask_discord_interactions.discord.Discord.command`, that name will be used to trigger the action, in this case "/slack-example". If no name was given, it would default to the functions name: "chat_command".
+Since a name was passed to :meth:`~discord_interactions_flask.discord.Discord.command`, that name will be used to trigger the action, in this case "/slack-example". If no name was given, it would default to the functions name: "chat_command".
 
 .. code-block:: python
 
@@ -103,9 +103,9 @@ Since a name was passed to :meth:`~flask_discord_interactions.discord.Discord.co
 
 As of the current version of the project, this is where the convenience features end. 
 
-1. The command is passed a :class:`flask_discord_interactions.interactions.ChatInteraction` instance. This is a just the data we were sent from discord, serialized into a :class:`~dataclasses.dataclass`.
+1. The command is passed a :class:`discord_interactions_flask.interactions.ChatInteraction` instance. This is a just the data we were sent from discord, serialized into a :class:`~dataclasses.dataclass`.
 
-2. A command must return an :class:`flask_discord_interactions.discord_types.InteractionResponse` instance, and you must construct this manually.
+2. A command must return an :class:`discord_interactions_flask.discord_types.InteractionResponse` instance, and you must construct this manually.
 
 .. code-block:: python
 
@@ -117,4 +117,4 @@ After a slash command has been defined, you may add a description to it.
 
     discord.init_app(app)
 
-Finally, call :meth:`flask_discord_interactions.discord.Discord.init_app` to attach the "/discord/interactions" endpoint to your app, and submit your commands to Discord.
+Finally, call :meth:`discord_interactions_flask.discord.Discord.init_app` to attach the "/discord/interactions" endpoint to your app, and submit your commands to Discord.

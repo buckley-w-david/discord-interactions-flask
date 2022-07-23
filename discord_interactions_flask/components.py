@@ -1,7 +1,7 @@
 from typing import Union, Callable, Optional
 
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions import interactions
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask import interactions
 
 ButtonFunction = Callable[[interactions.ButtonInteraction], types.InteractionResponse]
 TextInputFunction = Callable[

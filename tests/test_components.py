@@ -1,5 +1,5 @@
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions.discord_types import (
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask.discord_types import (
     ActionRow,
     Button,
     SelectMenu,

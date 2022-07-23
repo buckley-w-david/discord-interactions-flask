@@ -2,9 +2,9 @@ from contextlib import redirect_stdout
 import io
 from typing import cast
 
-from flask_discord_interactions import Discord, ChatInteraction
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions import helpers
+from discord_interactions_flask import Discord, ChatInteraction
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask import helpers
 
 
 discord = Discord()

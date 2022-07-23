@@ -3,9 +3,9 @@ from functools import wraps
 from typing import Union, Dict, cast
 import jsons
 
-from flask_discord_interactions.discord_types import CommandType
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions import interactions
+from discord_interactions_flask.discord_types import CommandType
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask import interactions
 
 
 class ChatCommand:

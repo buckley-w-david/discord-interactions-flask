@@ -1,11 +1,11 @@
 import os
 from dataclasses import asdict
 
-from flask_discord_interactions import Discord
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions import interactions
-from flask_discord_interactions import components
-from flask_discord_interactions.helpers import content_response
+from discord_interactions_flask import Discord
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask import interactions
+from discord_interactions_flask import components
+from discord_interactions_flask.helpers import content_response
 from flask import Flask
 
 discord = Discord()
