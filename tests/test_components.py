@@ -8,7 +8,7 @@ from discord_interactions_flask.discord_types import (
 
 
 def test_button():
-    obj = {"type": 2, "style": 1}
+    obj = {"custom_id": "button", "label": "label", "type": 2, "style": 1}
 
     button = Button.load(obj)
     assert button.type is types.ComponentType.BUTTON
