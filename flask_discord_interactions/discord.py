@@ -9,7 +9,7 @@ from collections import defaultdict
 import http
 import json
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 
 from flask import Blueprint, Flask, jsonify, request
 
@@ -71,9 +71,9 @@ class Discord:
     ):
         """Initialzation."""
 
-        # FIXME: I don't love this guild/global/runtime dic approach
-        self.guild_commands: defaultdict[str, dict[str, Command]] = defaultdict(dict)
-        self.global_commands: dict[str, Command] = {}
+        # TODO: Would be nice if I didn't have to maintain two separate dicts of commands
+        self.commands: defaultdict[Optional[str], dict[str, Command]] = defaultdict(dict)
+
         self.runtime_commands: dict[str, Command] = {}
 
         # TODO: evict old handlers
@@ -230,6 +230,28 @@ class Discord:
             "Authorization"
         ] = f"{token['token_type']} {token['access_token']}"
 
+    def _create_commands(
+        self, commands: Iterable[Command], guild_id: Optional[str] = None
+    ) -> list[types.ApplicationCommand]:
+        """Push the list of :class:`Command` to the Discord application indicated by the DISCORD_CLIENT_ID key in bulk.
+
+        Args
+            command: The command the create.
+            guild_id: if not present, the command will be created as a global one. Otherwise it will be created for the specifiied guild.
+        """
+        if guild_id:
+            url = GUILD_URL_TEMPLATE % (self.client_id, guild_id)
+        else:
+            url = GLOBAL_URL_TEMPLATE % self.client_id
+
+        resp = self.http.request(
+            "PUT", url, body=json.dumps([command.spec() for command in commands]).encode("utf-8")
+        )
+        if resp.status == http.HTTPStatus.OK:
+            return [types.ApplicationCommand.load(payload) for payload in json.loads(resp.data.decode("utf-8"))]
+        else:
+            raise errors.DiscordApiError(resp.data.decode("utf-8"))
+
     def _create_command(
         self, command: Command, guild_id: Optional[str] = None
     ) -> types.ApplicationCommand:
@@ -256,10 +278,7 @@ class Discord:
     def add_command(
         self, name: str, command: Command, guild_id: Optional[str] = None
     ) -> None:
-        if guild_id:
-            self.guild_commands[guild_id][name] = command
-        else:
-            self.global_commands[name] = command
+        self.commands[guild_id][name] = command
 
         # If we're already initialized, we send the command to discord right away
         if self.public_key is not None:
@@ -295,7 +314,7 @@ class Discord:
                 "You must define DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET configuration values"
             )
 
-        if not self.guild_commands and not self.global_commands:
+        if not self.commands:
             logger.warning(
                 "Running init_commands with no commands defined!\n"
                 "If you would like flask-discord-interactions to automatically push commands to Discord you will "
@@ -306,11 +325,8 @@ class Discord:
 
         self._refresh_token()
 
-        for (guild_id, commands) in self.guild_commands.items():
-            for (_, command) in commands.items():
-                interaction = self._create_command(command, guild_id)
-                self.runtime_commands[interaction.id] = command
+        for guild_id, commands in self.commands.items():
+            iteractions = self._create_commands(commands.values(), guild_id)
 
-        for (_, command) in self.global_commands.items():
-            interaction = self._create_command(command)
-            self.runtime_commands[interaction.id] = command
+            for command, interaction in zip(commands.values(), iteractions):
+                self.runtime_commands[interaction.id] = command
