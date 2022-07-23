@@ -1,5 +1,5 @@
 import os
-from dataclasses import asdict
+from typing import Optional
 
 from discord_interactions_flask import Discord
 from discord_interactions_flask import discord_types as types
@@ -10,8 +10,12 @@ from flask import Flask
 
 discord = Discord()
 
-def button_response_2(interaction: interactions.ButtonInteraction) -> types.InteractionResponse:
+
+def button_response_2(
+    interaction: interactions.ButtonInteraction,
+) -> types.InteractionResponse:
     return content_response("Hello, World 2!")
+
 
 @discord.command("slash-example")
 def chat_command(
@@ -24,7 +28,9 @@ def chat_command(
     )
 
     @button.handler
-    def button_response(interaction: interactions.ButtonInteraction) -> types.InteractionResponse:
+    def button_response(
+        interaction: interactions.ButtonInteraction,
+    ) -> types.InteractionResponse:
         return content_response("Hello, World!")
 
     button_2 = components.Button(
@@ -41,22 +47,27 @@ def chat_command(
                 label="label-1",
                 value="value-1",
             )
-        ]
+        ],
     )
 
     @select_menu.handler
-    def sm_response(interaction: interactions.SelectMenuInteraction) -> types.InteractionResponse:
+    def sm_response(
+        interaction: interactions.SelectMenuInteraction,
+    ) -> types.InteractionResponse:
         return content_response(f"You selected: {interaction.data.values[0]}")
 
     return types.InteractionResponse(
         type=types.InteractionCallbackType.CHANNEL_MESSAGE_WITH_SOURCE,
         data=types.InteractionCallbackDataMessage(
-            content="Slash!", components=[
+            content="Slash!",
+            components=[
                 types.ActionRow(components=[button, button_2]),
-                types.ActionRow(components=[select_menu])
-            ]
+                types.ActionRow(components=[select_menu]),
+            ],
         ),
     )
+
+
 chat_command.description = "Say Hello via a slash command"
 
 
@@ -79,7 +90,6 @@ def message_command(
         content = "fallback"
 
     return content_response(content)
-
 
 with discord.command("slash-group") as command:
     command.description = "Example command with grous"
@@ -114,6 +124,15 @@ with discord.command("slash-group") as command:
             return content_response("Hello from sub-4!")
 
         sub_4.description = "sub-4"
+
+
+@discord.command()
+def echo(text: str, times: Optional[int]) -> types.InteractionResponse:
+    lines = [text for _ in range(times or 1)]
+    return content_response("\n".join(lines))
+
+
+echo.description = "echo"
 
 app = Flask(__name__)
 app.config["DISCORD_PUBLIC_KEY"] = os.environ["DISCORD_PUBLIC_KEY"]

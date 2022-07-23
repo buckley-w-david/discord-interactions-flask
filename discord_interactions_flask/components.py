@@ -8,7 +8,7 @@ TextInputFunction = Callable[
     [interactions.TextInputInteraction], types.InteractionResponse
 ]
 SelectMenuFunction = Callable[
-    [interactions.TextInputInteraction], types.InteractionResponse
+    [interactions.SelectMenuInteraction], types.InteractionResponse
 ]
 
 

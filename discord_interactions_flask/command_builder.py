@@ -2,18 +2,20 @@
 from collections.abc import Generator
 from contextlib import contextmanager
 import inspect
-import logging
+import typing
 from typing import Callable, Optional, Union, TYPE_CHECKING
 
 
 from discord_interactions_flask import discord_types as types
 from discord_interactions_flask.command import (
     ChatCommand,
+    ChatCommandWithArgs,
     ChatMetaCommand,
     CommandGroup,
     MessageCommand,
     SubCommand,
     UserCommand,
+    BaseCommand,
 )
 from discord_interactions_flask import interactions
 
@@ -30,19 +32,70 @@ COMMANDS = {
 ChatFunction = Callable[[interactions.ChatInteraction], types.InteractionResponse]
 UserFunction = Callable[[interactions.UserInteraction], types.InteractionResponse]
 MessageFunction = Callable[[interactions.MessageInteraction], types.InteractionResponse]
-# There is a term for why I need to specify the type like this instead of `Callable[[types.Interaction], types.InteractionResponse]` being able to apply to all three, I just forget what it is
-# The rationale is that `Callable[[types.Interaction], types.InteractionResponse]` means "Function that can take any Interaction and returns an InteractionResponse"
-# A function that can only take UserInteractions does not satisfy that
-CommandFunction = Union[ChatFunction, UserFunction, MessageFunction]
+
+# This isn't great, but it's the best I've been able to figure out
+# I want to somehow express that a ChatWithArgsFunction is a Callable with any number of args, all of which are a str, int, float, or bool
+# I haven't been able to figure that out, the best I can do here is say that it's a function that takes some args, the first of which is one of those types
+# The only "technically" correct way I can think of is generating all possible parameter combinations.
+# There is a max of 25 params, and 8 possible types (4 normal + 4 optional variants)
+# This results in 43_175_922_129_093_899_096_648 valid function signatures, all of which I would need to explicitly define
+P = typing.ParamSpec("P")
+ChatWithStrArgsFunction = Callable[
+    typing.Concatenate[str, P], types.InteractionResponse
+]
+ChatWithOStrArgsFunction = Callable[
+    typing.Concatenate[Optional[str], P], types.InteractionResponse
+]
+ChatWithIntArgsFunction = Callable[
+    typing.Concatenate[int, P], types.InteractionResponse
+]
+ChatWithOIntArgsFunction = Callable[
+    typing.Concatenate[Optional[int], P], types.InteractionResponse
+]
+ChatWithFloatArgsFunction = Callable[
+    typing.Concatenate[float, P], types.InteractionResponse
+]
+ChatWithOFloatArgsFunction = Callable[
+    typing.Concatenate[Optional[float], P], types.InteractionResponse
+]
+ChatWithBoolArgsFunction = Callable[
+    typing.Concatenate[bool, P], types.InteractionResponse
+]
+ChatWithOBoolArgsFunction = Callable[
+    typing.Concatenate[Optional[bool], P], types.InteractionResponse
+]
+ChatWithArgsFunction = Union[
+    ChatWithStrArgsFunction,
+    ChatWithIntArgsFunction,
+    ChatWithFloatArgsFunction,
+    ChatWithBoolArgsFunction,
+    ChatWithOStrArgsFunction,
+    ChatWithOIntArgsFunction,
+    ChatWithOFloatArgsFunction,
+    ChatWithOBoolArgsFunction,
+]
+
+CommandFunction = Union[
+    ChatFunction, UserFunction, MessageFunction, ChatWithArgsFunction
+]
+
+TYPE_OPTION_MAP = {
+    str: types.ApplicationCommandOptionType.STRING,
+    int: types.ApplicationCommandOptionType.INTEGER,
+    bool: types.ApplicationCommandOptionType.BOOLEAN,
+    float: types.ApplicationCommandOptionType.NUMBER,
+}
+
+# Where is this supposed to come from?
+NoneType = type(None)
 
 
-# TODO: Add description param
 class CommandBuilder:
     """Builds :class:`Command` instances from functions. Typically constructed with :meth:`~discord_interactions_flask.discord.Discord.command`."""
 
     def __init__(
         self,
-        discord: 'Discord',
+        discord: "Discord",
         name: Optional[str],
         description: Optional[str],
         guild_id: Optional[str],
@@ -60,7 +113,29 @@ class CommandBuilder:
 
         self.context = {}
 
-    def __call__(self, f: CommandFunction):
+    # NOTE: These overloads expose a bug in the type checker
+    #       When all the interaction types share a parent class
+    #       it finds each *Function definition an equallty good match
+    #       for any of the overloads, so always picks the first one
+    #       I _could_ attempt to snip that common ancestor by duplicating a bunch
+    #       of defintions, but after trying it it seems more trouble than it's worth
+    @typing.overload
+    def __call__(self, f: ChatFunction) -> ChatCommand:
+        ...
+
+    @typing.overload
+    def __call__(self, f: UserFunction) -> UserCommand:
+        ...
+
+    @typing.overload
+    def __call__(self, f: MessageFunction) -> MessageCommand:
+        ...
+
+    @typing.overload
+    def __call__(self, f: ChatWithArgsFunction) -> ChatCommand:
+        ...
+
+    def __call__(self, f: CommandFunction) -> BaseCommand:
         """Decorate a command function to create a :class:`Command`.
 
         .. code-block:: python
@@ -72,17 +147,42 @@ class CommandBuilder:
         Args
             f: A callable that takes a :class:`interactions.ChatInteraction`, :class:`interactions.UserInteraction`, or :class:`interactions.MessageInteraction` instance and returns a :class:`types.InteractionResponse`.
         """
-        signature = inspect.signature(f)
-        param = list(signature.parameters.values())[0]
-        if not (command_class := COMMANDS.get(param.annotation)):
-            raise ValueError("Command parameter must be a valid Interaction type")
-
         if self.name:
             name = self.name
         else:
             name = f.__name__
-        command = command_class(name, f)
-        command.description = self._description
+        signature = inspect.signature(f)
+        param = list(signature.parameters.values())[0]
+        if command_class := COMMANDS.get(param.annotation):
+            command = command_class(name, f)
+            command.description = self._description
+        else:
+            command = ChatCommandWithArgs(name, f)
+            command.description = self._description or ""
+            for param in signature.parameters.values():
+                annotation = param.annotation
+                required = True
+
+                if typing.get_origin(annotation) is typing.Union:
+                    sub_types = typing.get_args(annotation)
+                    if len(sub_types) != 2 or sub_types[1] is not NoneType:
+                        raise ValueError("Only Optional type unions are supported")
+                    required = False
+                    annotation = sub_types[0]
+
+                type_ = TYPE_OPTION_MAP.get(annotation)  # type: ignore
+                if type_ is None:
+                    raise ValueError(f"{annotation} is not a supported argument type")
+
+                command.add_option(
+                    types.ApplicationCommandOption(
+                        type=type_,
+                        name=param.name,
+                        description=param.name,
+                        required=required,
+                    )
+                )
+
         self.discord.add_command(name, command, self.guild_id)
         return command
 

@@ -26,7 +26,8 @@ from typing import Union, get_args
 
 from jsons.deserializers import default_union
 
-def deserializer_union(obj: object, cls: Union, **kwargs) -> object: # type: ignore
+
+def deserializer_union(obj: object, cls: Union, **kwargs) -> object:  # type: ignore
     # If the object is already an instance a type in the union, return it directly
     # This is mostly for primative types that can be coorced into each other
     for sub_type in get_args(cls):
@@ -35,13 +36,10 @@ def deserializer_union(obj: object, cls: Union, **kwargs) -> object: # type: ign
 
     return default_union.default_union_deserializer(obj, cls, **kwargs)
 
+
 class BaseModel(
-    JsonSerializable.set_serializer(
-        serialize_literal, Literal
-    ).set_deserializer(  # type: ignore
-        deserialize_literal, Literal
-    ).set_deserializer(  # type: ignore
-        deserializer_union, Union
-    )
+    JsonSerializable.set_serializer(serialize_literal, Literal)
+    .set_deserializer(deserialize_literal, Literal)  # type: ignore
+    .set_deserializer(deserializer_union, Union)  # type: ignore
 ):  # type: ignore
     pass

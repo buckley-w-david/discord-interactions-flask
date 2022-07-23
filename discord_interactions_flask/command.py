@@ -34,6 +34,15 @@ class ChatCommand:
         return self.func(interaction)
 
 
+class ChatCommandWithArgs(ChatCommand):
+    def __call__(self, interaction: interactions.ChatInteraction):
+        assert interaction.data.options is not None
+
+        return self.func(
+            **{option.name: option.value for option in interaction.data.options}
+        )
+
+
 class SubCommand(ChatCommand):
     def spec(self) -> dict:
         spec = super().spec()
@@ -132,4 +141,5 @@ class MessageCommand:
         return self.func(interaction)
 
 
+BaseCommand = Union[ChatCommand, UserCommand, MessageCommand]
 Command = Union[ChatCommand, ChatMetaCommand, UserCommand, MessageCommand]

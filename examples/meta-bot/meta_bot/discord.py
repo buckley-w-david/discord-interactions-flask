@@ -29,7 +29,9 @@ def create(interaction: ChatInteraction) -> types.InteractionResponse:
         output = f.getvalue() or "No Output"
         return helpers.content_response(output)
 
-    return helpers.content_response(f"Created /{name}! I hope you know what you're doing!")
+    return helpers.content_response(
+        f"Created /{name}! I hope you know what you're doing!"
+    )
 
 
 create.description = "Create a new command"
