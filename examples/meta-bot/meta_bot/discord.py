@@ -28,7 +28,6 @@ def create(interaction: ChatInteraction) -> types.InteractionResponse:
             exec(code, globals(), locals())
         output = f.getvalue() or "No Output"
         return helpers.content_response(output)
-    print(new_command.spec())
 
     return helpers.content_response(f"Created /{name}! I hope you know what you're doing!")
 

@@ -4,6 +4,9 @@ version = "0.1.1"
 description = ""
 authors = ["David Buckley <david@davidbuckley.ca>"]
 readme = "README.md"
+license = "MIT"
+homepage = "https://github.com/buckley-w-david/discord-interactions-flask"
+repository = "https://github.com/buckley-w-david/discord-interactions-flask"
 
 [tool.poetry.dependencies]
 python = "^3.10"
