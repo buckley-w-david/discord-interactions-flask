@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'flask-discord-interactions'
+project = 'discord-interactions-flask'
 copyright = '2022, David Buckley'
 author = 'David Buckley'
 

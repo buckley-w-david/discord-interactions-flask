@@ -1,8 +1,8 @@
-# repl-bot
+# meta-bot
 
-This project demonstrates something a bit more complex than the `simple-demo`, as well as a better project structure
+This project demonstrates creating commands dynamically at runtime.
 
-A slash command named `/exec` is defined that takes a string argument. This string is run through `exec`, and any output is returned in a message.
+I'm not sure why you'd ever want to do that, but you can.
 
 ## Running
 

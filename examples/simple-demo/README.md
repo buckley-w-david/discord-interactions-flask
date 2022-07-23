@@ -5,8 +5,8 @@ This project is just a demonstraction of various features of the library
 ## Running
 
 ```bash
-$ git clone https://github.com/buckley-w-david/flask-discord-interactions.git
-$ cd flask-discord-interactions/examples/simple-demo
+$ git clone https://github.com/buckley-w-david/discord-interactions-flask.git
+$ cd discord-interactions-flask/examples/simple-demo
 $ export DISCORD_PUBLIC_KEY="..."
 $ export DISCORD_CLIENT_ID="..."
 $ export DISCORD_CLIENT_SECRET="..."

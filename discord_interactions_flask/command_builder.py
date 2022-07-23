@@ -6,8 +6,8 @@ import logging
 from typing import Callable, Optional, Union, cast, TYPE_CHECKING
 
 
-from flask_discord_interactions import discord_types as types
-from flask_discord_interactions.command import (
+from discord_interactions_flask import discord_types as types
+from discord_interactions_flask.command import (
     ChatCommand,
     ChatMetaCommand,
     CommandGroup,
@@ -15,10 +15,10 @@ from flask_discord_interactions.command import (
     SubCommand,
     UserCommand,
 )
-from flask_discord_interactions import interactions
+from discord_interactions_flask import interactions
 
 if TYPE_CHECKING:
-    from flask_discord_interactions.discord import Discord
+    from discord_interactions_flask.discord import Discord
 
 
 logger = logging.getLogger(__name__)
@@ -40,23 +40,25 @@ CommandFunction = Union[ChatFunction, UserFunction, MessageFunction]
 
 # TODO: Add description param
 class CommandBuilder:
-    """Builds :class:`Command` instances from functions. Typically constructed with :meth:`~flask_discord_interactions.discord.Discord.command`."""
+    """Builds :class:`Command` instances from functions. Typically constructed with :meth:`~discord_interactions_flask.discord.Discord.command`."""
 
     def __init__(
         self,
         discord: 'Discord',
         name: Optional[str],
+        description: Optional[str],
         guild_id: Optional[str],
     ):
         """Initialize :class:`CommandBuilder`.
 
         Args
-            discord: A reference to a :class:`flask_discord_interactions.discord.Discord`.
+            discord: A reference to a :class:`discord_interactions_flask.discord.Discord`.
             name: An optional name to use for the command. If not present the command functions name will be used.
         """
         self.discord = discord
         self.name = name
         self.guild_id = guild_id
+        self._description = description
 
         self.context = {}
 
@@ -82,6 +84,7 @@ class CommandBuilder:
         else:
             name = f.__name__
         command = command_class(name, f)
+        command.description = self._description
         self.discord.add_command(name, command, self.guild_id)
         return command
 

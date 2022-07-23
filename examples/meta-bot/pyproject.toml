@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "repl-bot"
+name = "meta-bot"
 version = "0.1.0"
 description = ""
 authors = ["David Buckley <david@davidbuckley.ca>"]
@@ -7,8 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-discord-interactions-flask = { path = "../..", develop=true }
 Flask = "^2.1.3"
+discord-interactions-flask = { path = "../..", develop=true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

@@ -1,22 +1,22 @@
 API Reference
 ==========================
-.. automodule:: flask_discord_interactions
+.. automodule:: discord_interactions_flask
    :members:
 
 .. _Discord:
 
 Discord extension
 -----------------
-.. automodule:: flask_discord_interactions.discord
+.. automodule:: discord_interactions_flask.discord
    :members:
 
 CommandBuilder
 --------------
-.. automodule:: flask_discord_interactions.command_builder
+.. automodule:: discord_interactions_flask.command_builder
    :members:
    :special-members:
 
 Discord types
 --------------
-.. automodule:: flask_discord_interactions.discord_types
+.. automodule:: discord_interactions_flask.discord_types
    :members:

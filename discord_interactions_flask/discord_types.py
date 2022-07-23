@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Literal, Dict, Any
 from dataclasses import dataclass
 import enum
 
-from flask_discord_interactions.jsons import BaseModel
+from discord_interactions_flask.jsons import BaseModel
 
 Snowflake = str
 

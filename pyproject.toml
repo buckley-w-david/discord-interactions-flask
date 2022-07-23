@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "flask-discord-interactions"
+name = "discord-interactions-flask"
 version = "0.1.1"
 description = ""
 authors = ["David Buckley <david@davidbuckley.ca>"]

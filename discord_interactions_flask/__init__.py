@@ -1,10 +1,10 @@
 __version__ = "0.2.0"
 
-from flask_discord_interactions.discord import Discord
-from flask_discord_interactions.discord_types import (
+from discord_interactions_flask.discord import Discord
+from discord_interactions_flask.discord_types import (
     InteractionResponse,
 )
-from flask_discord_interactions.interactions import (
+from discord_interactions_flask.interactions import (
     ChatInteraction,
     UserInteraction,
     MessageInteraction,

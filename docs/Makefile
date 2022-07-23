@@ -16,7 +16,7 @@ watch:
 	find source/ | entr -r make html
 
 upload: html
-	rsync -a --progress build/html/ ubuntu@arm2:/var/www/docs.davidbuckley.ca/flask-discord-interactions/
+	rsync -a --progress build/html/ ubuntu@arm2:/var/www/docs.davidbuckley.ca/discord-interactions-flask/
 
 .PHONY: help watch Makefile
 

@@ -1,4 +1,4 @@
-from flask_discord_interactions import __version__
+from discord_interactions_flask import __version__
 
 # TODO: Write some damn tests
 
