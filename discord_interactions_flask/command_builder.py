@@ -64,6 +64,9 @@ ChatWithBoolArgsFunction = Callable[
 ChatWithOBoolArgsFunction = Callable[
     typing.Concatenate[Optional[bool], P], types.InteractionResponse
 ]
+ChatWithNoArgsFunction = Callable[
+    [], types.InteractionResponse
+]
 ChatWithArgsFunction = Union[
     ChatWithStrArgsFunction,
     ChatWithIntArgsFunction,
@@ -73,6 +76,7 @@ ChatWithArgsFunction = Union[
     ChatWithOIntArgsFunction,
     ChatWithOFloatArgsFunction,
     ChatWithOBoolArgsFunction,
+    ChatWithNoArgsFunction
 ]
 
 CommandFunction = Union[
