@@ -10,8 +10,9 @@ import http
 import json
 import logging
 from typing import Optional, Union, Iterable
+from types import SimpleNamespace
 
-from flask import Blueprint, Flask, jsonify, request
+from flask import Blueprint, Flask, jsonify, request, g
 
 import urllib3
 
@@ -151,6 +152,7 @@ class Discord:
         def interactions():
             payload = request.json
             assert payload is not None
+            g.discord_interactions = SimpleNamespace()
 
             match payload["type"]:
                 case types.InteractionType.PING:
@@ -171,6 +173,7 @@ class Discord:
                                 "Discord sent an invalid command type - %s"
                                 % payload["data"]["type"]
                             )
+                    g.discord_interactions.ctx = command_interaction
 
                     handler = self.runtime_commands.get(command_interaction.data.id)
                     if not handler:
@@ -199,6 +202,8 @@ class Discord:
                     # It's interesting that typing errors have pushed me to explicitly define my invariants
                     assert component_interaction.message is not None
                     assert component_interaction.message.interaction is not None
+
+                    g.discord_interactions.ctx = component_interaction
 
                     handlers = self.component_handlers.get(
                         component_interaction.message.interaction.id
