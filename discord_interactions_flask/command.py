@@ -9,10 +9,10 @@ from discord_interactions_flask import interactions
 
 
 class ChatCommand:
-    def __init__(self, name: str, func):
+    def __init__(self, name: str, description: str, func):
         self.name = name
+        self.description = description
         self.func = func
-        self.description = ""
         self.options = []
         wraps(func)(self)
 
@@ -36,11 +36,12 @@ class ChatCommand:
 
 class ChatCommandWithArgs(ChatCommand):
     def __call__(self, interaction: interactions.ChatInteraction):
-        assert interaction.data.options is not None
+        if interaction.data.options:
+            kwargs = {option.name: option.value for option in interaction.data.options}
+        else:
+            kwargs = {}
 
-        return self.func(
-            **{option.name: option.value for option in interaction.data.options}
-        )
+        return self.func(**kwargs)
 
 
 class SubCommand(ChatCommand):
@@ -53,7 +54,7 @@ class SubCommand(ChatCommand):
 @dataclass
 class CommandGroup:
     name: str
-    description: str = ""
+    description: str
     subcommands: Dict[str, SubCommand] = field(default_factory=dict)
 
     def spec(self):
@@ -63,6 +64,9 @@ class CommandGroup:
             "type": types.ApplicationCommandOptionType.SUB_COMMAND_GROUP,
             "options": [sc.spec() for (_, sc) in self.subcommands.items()],
         }
+
+    def add_child(self, subcommand: SubCommand):
+        self.subcommands[subcommand.name] = subcommand
 
     def __call__(
         self, interaction: interactions.ChatInteraction
@@ -85,7 +89,7 @@ class CommandGroup:
 class ChatMetaCommand:
     name: str
     children: Dict[str, Union[CommandGroup, SubCommand]]
-    description: str = ""
+    description: str
 
     def spec(self):
         return {
@@ -94,6 +98,9 @@ class ChatMetaCommand:
             "description": self.description,
             "options": [child.spec() for (_, child) in self.children.items()],
         }
+
+    def add_child(self, child: Union[CommandGroup, SubCommand]):
+        self.children[child.name] = child
 
     def __call__(
         self, interaction: interactions.ChatInteraction

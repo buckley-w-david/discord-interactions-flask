@@ -17,10 +17,8 @@ def button_response_2(
     return content_response("Hello, World 2!")
 
 
-@discord.command("slash-example")
-def chat_command(
-    interaction: interactions.ChatInteraction,
-) -> types.InteractionResponse:
+@discord.command("slash-example", "Say Hello via a slash command")
+def chat_command() -> types.InteractionResponse:
     button = components.Button(
         custom_id="button-1",
         label="Push me!",
@@ -68,9 +66,6 @@ def chat_command(
     )
 
 
-chat_command.description = "Say Hello via a slash command"
-
-
 @discord.command("User Example")
 def user_command(
     interaction: interactions.UserInteraction,
@@ -91,23 +86,18 @@ def message_command(
 
     return content_response(content)
 
-with discord.command("slash-group") as command:
-    command.description = "Example command with grous"
+
+with discord.command("slash-group", "Example command with groups") as command:
 
     @command.subcommand("sub-1")
     def sub_1(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return content_response("Hello from sub-1!")
 
-    sub_1.description = "sub-1"
-
     @command.subcommand("sub-2")
     def sub_2(interaction: interactions.ChatInteraction) -> types.InteractionResponse:
         return content_response("Hello from sub-2!")
 
-    sub_2.description = "sub-2"
-
-    with command.group("group-1") as group:
-        group.description = "Group description"
+    with command.group("group-1", "Group description") as group:
 
         @group.subcommand("sub-3")
         def sub_3(
@@ -115,24 +105,18 @@ with discord.command("slash-group") as command:
         ) -> types.InteractionResponse:
             return content_response("Hello from sub-3!")
 
-        sub_3.description = "sub-3"
-
         @group.subcommand("sub-4")
         def sub_4(
             interaction: interactions.ChatInteraction,
         ) -> types.InteractionResponse:
             return content_response("Hello from sub-4!")
 
-        sub_4.description = "sub-4"
-
 
 @discord.command()
-def echo(text: str, times: Optional[int]) -> types.InteractionResponse:
+def echo(text: str, times: Optional[int] = None) -> types.InteractionResponse:
     lines = [text for _ in range(times or 1)]
     return content_response("\n".join(lines))
 
-
-echo.description = "echo"
 
 app = Flask(__name__)
 app.config["DISCORD_PUBLIC_KEY"] = os.environ["DISCORD_PUBLIC_KEY"]

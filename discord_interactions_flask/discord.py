@@ -296,10 +296,8 @@ class Discord:
         else:
             raise errors.DiscordApiError(resp.data.decode("utf-8"))
 
-    def add_command(
-        self, name: str, command: Command, guild_id: Optional[str] = None
-    ) -> None:
-        self.commands[guild_id][name] = command
+    def add_command(self, command: Command, guild_id: Optional[str] = None) -> None:
+        self.commands[guild_id][command.name] = command
 
         # If we're already initialized, we send the command to discord right away
         if self.public_key is not None:

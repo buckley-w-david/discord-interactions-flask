@@ -4,7 +4,7 @@ from typing import Optional
 
 from flask import g
 
-from discord_interactions_flask import Discord, ChatInteraction
+from discord_interactions_flask import Discord
 from discord_interactions_flask import discord_types as types
 from discord_interactions_flask import helpers
 
@@ -12,12 +12,14 @@ from discord_interactions_flask import helpers
 discord = Discord()
 
 
-@discord.command()
-def create(name: str, code: str, description: Optional[str] = "No Description" ) -> types.InteractionResponse:
+@discord.command("create", "Create a new command")
+def create(
+    name: str, code: str, description: Optional[str] = "No Description"
+) -> types.InteractionResponse:
     guild = g.discord_interactions.ctx.data.guild_id
 
     @discord.command(name, description, guild)
-    def new_command(interaction: ChatInteraction) -> types.InteractionResponse:
+    def new_command() -> types.InteractionResponse:
         with redirect_stdout(io.StringIO()) as f:
             exec(code, globals(), locals())
         output = f.getvalue() or "No Output"
@@ -26,5 +28,3 @@ def create(name: str, code: str, description: Optional[str] = "No Description" )
     return helpers.content_response(
         f"Created /{name}! I hope you know what you're doing!"
     )
-
-create.description = "Create a new command"

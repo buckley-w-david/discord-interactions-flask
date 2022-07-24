@@ -5,8 +5,9 @@ from discord_interactions_flask.discord_types import (
     InteractionType,
     CommandType,
     ApplicationCommandInteractionDataOption,
-    ApplicationCommandOptionType
+    ApplicationCommandOptionType,
 )
+
 
 @pytest.fixture
 def meta_subcommand_interaction():
@@ -23,13 +24,14 @@ def meta_subcommand_interaction():
             options=[
                 ApplicationCommandInteractionDataOption(
                     name="meta_chat_sub_1",
-                    type=ApplicationCommandOptionType.SUB_COMMAND
+                    type=ApplicationCommandOptionType.SUB_COMMAND,
                 ),
             ],
         ),
         guild_id="meta_chat_guild_id",
         channel_id="meta_chat_channel_id",
     )
+
 
 @pytest.fixture
 def meta_group_interaction():
@@ -50,9 +52,9 @@ def meta_group_interaction():
                     options=[
                         ApplicationCommandInteractionDataOption(
                             name="meta_chat_sub_1",
-                            type=ApplicationCommandOptionType.SUB_COMMAND
+                            type=ApplicationCommandOptionType.SUB_COMMAND,
                         ),
-                    ]
+                    ],
                 ),
             ],
         ),

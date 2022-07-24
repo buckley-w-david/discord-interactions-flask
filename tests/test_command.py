@@ -1,32 +1,38 @@
 from unittest.mock import MagicMock
 
-from discord_interactions_flask.command import ChatMetaCommand, SubCommand, CommandGroup, ChatCommand
-from discord_interactions_flask.discord_types import ApplicationCommandOption, ApplicationCommandOptionType, ApplicationCommandOptionChoice
+from discord_interactions_flask.command import (
+    ChatMetaCommand,
+    SubCommand,
+    CommandGroup,
+    ChatCommand,
+)
+from discord_interactions_flask.discord_types import (
+    ApplicationCommandOption,
+    ApplicationCommandOptionType,
+    ApplicationCommandOptionChoice,
+)
 
 # Optional elements are explicitly returned as `None` from spec()
 # For our purposes though, that's an implementation detail and doesn't really matter
 # This method is just to clean up those `None` valued entries to declutter tests
 def compact(obj):
     if isinstance(obj, dict):
-        return {
-            k: compact(v) for k, v in obj.items() if v is not None
-        }
+        return {k: compact(v) for k, v in obj.items() if v is not None}
     elif isinstance(obj, list):
-        return [
-            compact(v) for v in obj
-        ]
+        return [compact(v) for v in obj]
     else:
         return obj
 
 
 def test_chat_command_spec():
-    command = ChatCommand(name="blep", func=None)
-    command.description = "Send a random adorable animal photo"
+    command = ChatCommand(
+        name="blep", description="Send a random adorable animal photo", func=None
+    )
     command.add_option(
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.STRING,
             name="animal",
-            description= "The type of animal",
+            description="The type of animal",
             required=True,
             choices=[
                 ApplicationCommandOptionChoice(
@@ -40,19 +46,19 @@ def test_chat_command_spec():
                 ApplicationCommandOptionChoice(
                     name="Penguin",
                     value="animal_penguin",
-                )
-            ]
+                ),
+            ],
         )
     )
     command.add_option(
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.BOOLEAN,
             name="only_smol",
-            description= "Whether to show only baby animals",
+            description="Whether to show only baby animals",
             required=False,
         )
     )
-    spec = command.spec() 
+    spec = command.spec()
     spec["options"] = compact(spec["options"])
     assert spec == {
         "name": "blep",
@@ -65,30 +71,19 @@ def test_chat_command_spec():
                 "type": 3,
                 "required": True,
                 "choices": [
-                    {
-                        "name": "Dog",
-                        "value": "animal_dog"
-                    },
-                    {
-                        "name": "Cat",
-                        "value": "animal_cat"
-                    },
-                    {
-                        "name": "Penguin",
-                        "value": "animal_penguin"
-                    }
-                ]
+                    {"name": "Dog", "value": "animal_dog"},
+                    {"name": "Cat", "value": "animal_cat"},
+                    {"name": "Penguin", "value": "animal_penguin"},
+                ],
             },
             {
                 "name": "only_smol",
                 "description": "Whether to show only baby animals",
                 "type": 5,
-                "required": False
-            }
-        ]
+                "required": False,
+            },
+        ],
     }
-
-
 
 
 class TestMetaCommand:
@@ -97,8 +92,10 @@ class TestMetaCommand:
 
         sub_name = meta_subcommand_interaction.data.options[0].name
 
-        subcommand = SubCommand(name=sub_name, func=mock)
-        command = ChatMetaCommand(name="test_meta", children={ sub_name: subcommand })
+        subcommand = SubCommand(name=sub_name, description=sub_name, func=mock)
+        command = ChatMetaCommand(
+            name="test_meta", description="test_meta", children={sub_name: subcommand}
+        )
 
         command(meta_subcommand_interaction)
 
@@ -110,14 +107,13 @@ class TestMetaCommand:
         group_name = meta_group_interaction.data.options[0].name
         sub_name = meta_group_interaction.data.options[0].options[0].name
 
-        subcommand = SubCommand(name=sub_name, func=mock)
+        subcommand = SubCommand(name=sub_name, description=sub_name, func=mock)
         group = CommandGroup(
-            name=group_name,
-            subcommands={
-                sub_name: subcommand
-            }
+            name=group_name, description=group_name, subcommands={sub_name: subcommand}
         )
-        command = ChatMetaCommand(name="test_meta", children={ group_name: group })
+        command = ChatMetaCommand(
+            name="test_meta", description="test_meta", children={group_name: group}
+        )
 
         command(meta_group_interaction)
 

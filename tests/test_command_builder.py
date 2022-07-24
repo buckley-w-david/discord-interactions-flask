@@ -61,10 +61,9 @@ def test_builder_build_message_command():
 
 def test_builder_subcommand():
     d = Discord()
-    builder = d.command("meta")
+    builder = d.command("meta", "top level description")
 
     with builder as command:
-        command.description = "top level description"
         subcommand = command.subcommand("subname")(chat_function)
         subcommand.description = "test"
 
@@ -77,18 +76,16 @@ def test_builder_subcommand():
 
 def test_builder_group():
     d = Discord()
-    builder = d.command("meta")
+    builder = d.command("meta", "top level description")
 
     with builder as command:
-        command.description = "top level description"
-        with command.group("group") as group:
-            group.description = "group level description"
+        with command.group("group", "group level description") as group:
             subcommand = command.subcommand("subname")(chat_function)
             subcommand.description = "test"
 
     _, meta_command = d.commands[None].popitem()
     meta_command = typing.cast(ChatMetaCommand, meta_command)
-    
+
     group = typing.cast(CommandGroup, meta_command.children["group"])
     assert meta_command.description == "top level description"
     assert group.name == "group"
