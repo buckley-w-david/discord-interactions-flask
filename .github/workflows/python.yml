@@ -16,13 +16,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install poetry==1.1.13
+          poetry config virtualenvs.create false
           poetry install
       - name: Lint with black
         run: |
-          poetry run black --check discord_interactions_flask
+          black --check discord_interactions_flask
       - name: Test with pytest
         run: |
-          poetry run pytest
+          pytest
       - name: Typecheck with pyright
         run: |
-          poetry run pyright discord_interactions_flask
+          pyright discord_interactions_flask
