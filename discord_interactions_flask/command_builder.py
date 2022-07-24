@@ -117,7 +117,9 @@ class CommandBuilder:
     #       When all the interaction types share a parent class
     #       it finds each *Function definition an equallty good match
     #       for any of the overloads, so always picks the first one
-    #       I _could_ attempt to snip that common ancestor by duplicating a bunch
+    #       This seems to be caused by all of the *Interaction types
+    #       sharing a common parent class.
+    #       I _could_ attempt to snip that common parent by duplicating a bunch
     #       of defintions, but after trying it it seems more trouble than it's worth
     @typing.overload
     def __call__(self, f: ChatFunction) -> ChatCommand:
