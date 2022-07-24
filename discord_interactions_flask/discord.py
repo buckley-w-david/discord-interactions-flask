@@ -110,7 +110,9 @@ class Discord:
 
         Args
             name: An optional name to give the command. If not given the function name will be used.
+
             description: An optional description to give the command. If not given the name will be used.
+
             guild_id: An optional guild_id. If given the command will be created in just that guild.
 
         Returns
@@ -253,6 +255,7 @@ class Discord:
 
         Args
             command: The command the create.
+
             guild_id: if not present, the command will be created as a global one. Otherwise it will be created for the specifiied guild.
         """
         if guild_id:
@@ -280,6 +283,7 @@ class Discord:
 
         Args
             command: The command the create.
+
             guild_id: if not present, the command will be created as a global one. Otherwise it will be created for the specifiied guild.
         """
         if guild_id:

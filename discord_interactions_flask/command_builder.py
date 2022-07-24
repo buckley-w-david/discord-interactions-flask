@@ -119,8 +119,11 @@ class CommandBuilder:
 
         Args
             discord: A reference to a :class:`discord_interactions_flask.discord.Discord`.
+
             name: An optional name to give the command. If not given the function name will be used.
+
             description: An optional description to give the command. If not given the name will be used.
+
             guild_id: An optional guild_id. If given the command will be created in just that guild.
         """
         self.discord = discord
@@ -227,6 +230,7 @@ class CommandBuilder:
 
         Args
             name: An optional name to give the subcommand. If not given the functions name is used.
+
             description: An optional description to give the subcommand. If not given name is used.
         """
 
@@ -258,6 +262,7 @@ class CommandBuilder:
 
         Args
             name: An name for the group.
+
             description: An name for the group.
         """
         old_context = self.context
