@@ -72,7 +72,9 @@ class Discord:
         """Initialzation."""
 
         # TODO: Would be nice if I didn't have to maintain two separate dicts of commands
-        self.commands: defaultdict[Optional[str], dict[str, Command]] = defaultdict(dict)
+        self.commands: defaultdict[Optional[str], dict[str, Command]] = defaultdict(
+            dict
+        )
 
         self.runtime_commands: dict[str, Command] = {}
 
@@ -89,7 +91,10 @@ class Discord:
             self.init_app(app)
 
     def command(
-            self, name: Optional[str] = None, description: Optional[str] = None, guild_id: Optional[str] = None
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        guild_id: Optional[str] = None,
     ) -> CommandBuilder:
         """Define a new command.
 
@@ -198,10 +203,15 @@ class Discord:
                     handlers = self.component_handlers.get(
                         component_interaction.message.interaction.id
                     )
-                    if not handlers or component_interaction.data.custom_id not in handlers:
+                    if (
+                        not handlers
+                        or component_interaction.data.custom_id not in handlers
+                    ):
                         result = self.missing_component_handler(component_interaction)
                     else:
-                        result = handlers[component_interaction.data.custom_id](component_interaction)
+                        result = handlers[component_interaction.data.custom_id](
+                            component_interaction
+                        )
 
                     return self._handle_response(component_interaction, result)
                 case _:
@@ -246,10 +256,15 @@ class Discord:
             url = GLOBAL_URL_TEMPLATE % self.client_id
 
         resp = self.http.request(
-            "PUT", url, body=json.dumps([command.spec() for command in commands]).encode("utf-8")
+            "PUT",
+            url,
+            body=json.dumps([command.spec() for command in commands]).encode("utf-8"),
         )
         if resp.status == http.HTTPStatus.OK:
-            return [types.ApplicationCommand.load(payload) for payload in json.loads(resp.data.decode("utf-8"))]
+            return [
+                types.ApplicationCommand.load(payload)
+                for payload in json.loads(resp.data.decode("utf-8"))
+            ]
         else:
             raise errors.DiscordApiError(resp.data.decode("utf-8"))
 

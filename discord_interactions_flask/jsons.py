@@ -25,7 +25,10 @@ def deserialize_literal(
 from typing import Union, get_args
 
 import jsons
-default_union_deserializer = jsons.get_deserializer(Union) # type: ignore
+
+default_union_deserializer = jsons.get_deserializer(Union)  # type: ignore
+
+
 def deserializer_union(obj: object, cls: Union, **kwargs) -> object:  # type: ignore
     # If the object is already an instance a type in the union, return it directly
     # This is mostly for primative types that can be coorced into each other

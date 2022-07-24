@@ -19,10 +19,10 @@ jobs:
           poetry install
       - name: Lint with black
         run: |
-          poetry run black --check
+          poetry run black --check discord_interactions_flask
       - name: Test with pytest
         run: |
           poetry run pytest
       - name: Typecheck with pyright
         run: |
-          poetry run pyright
+          poetry run pyright discord_interactions_flask
