@@ -1,3 +1,5 @@
+import typing
+
 from discord_interactions_flask import Discord
 from discord_interactions_flask.command_builder import CommandBuilder
 from discord_interactions_flask.interactions import (
@@ -10,6 +12,7 @@ from discord_interactions_flask.command import (
     UserCommand,
     MessageCommand,
     ChatMetaCommand,
+    CommandGroup,
 )
 from discord_interactions_flask.discord_types import InteractionResponse
 
@@ -84,7 +87,9 @@ def test_builder_group():
             subcommand.description = "test"
 
     _, meta_command = d.commands[None].popitem()
-    group = meta_command.children["group"]
+    meta_command = typing.cast(ChatMetaCommand, meta_command)
+    
+    group = typing.cast(CommandGroup, meta_command.children["group"])
     assert meta_command.description == "top level description"
     assert group.name == "group"
     assert group.description == "group level description"
