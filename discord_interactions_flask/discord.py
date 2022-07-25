@@ -248,13 +248,14 @@ class Discord:
             "Authorization"
         ] = f"{token['token_type']} {token['access_token']}"
 
+    # TODO: Handle expired token
     def _create_commands(
         self, commands: Iterable[Command], guild_id: Optional[str] = None
     ) -> list[types.ApplicationCommand]:
         """Push the list of :class:`Command` to the Discord application indicated by the DISCORD_CLIENT_ID key in bulk.
 
         Args
-            command: The command the create.
+            commands: The commands to create.
 
             guild_id: if not present, the command will be created as a global one. Otherwise it will be created for the specifiied guild.
         """
@@ -282,7 +283,7 @@ class Discord:
         """Push the :class:`Command` to the Discord application indicated by the DISCORD_CLIENT_ID key.
 
         Args
-            command: The command the create.
+            command: The command to create.
 
             guild_id: if not present, the command will be created as a global one. Otherwise it will be created for the specifiied guild.
         """
