@@ -1,7 +1,7 @@
 .PHONY: test build publish docs format
 
 test:
-	pytest
+	poetry run pytest
 
 build: test
 	poetry build
