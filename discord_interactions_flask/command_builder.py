@@ -3,7 +3,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 import inspect
 import typing
-from typing import Callable, Optional, Union, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 
 from discord_interactions_flask import discord_types as types
@@ -16,75 +16,34 @@ from discord_interactions_flask.command import (
     SubCommand,
     UserCommand,
     BaseCommand,
+    ChatFunction,
+    UserFunction,
+    MessageFunction,
+    ChatWithArgsFunction,
+    CommandFunction,
 )
 from discord_interactions_flask import interactions
 
 if TYPE_CHECKING:
     from discord_interactions_flask.discord import Discord
 
-ChatFunction = Callable[[interactions.ChatInteraction], types.InteractionResponse]
-UserFunction = Callable[[interactions.UserInteraction], types.InteractionResponse]
-MessageFunction = Callable[[interactions.MessageInteraction], types.InteractionResponse]
-
-# This isn't great, but it's the best I've been able to figure out
-# I want to somehow express that a ChatWithArgsFunction is a Callable with any number of args, all of which are a str, int, float, or bool
-# I haven't been able to figure that out, the best I can do here is say that it's a function that takes some args, the first of which is one of those types
-# The only "technically" correct way I can think of is generating all possible parameter combinations.
-# There is a max of 25 params, and 8 possible types (4 normal + 4 optional variants)
-# This results in 43_175_922_129_093_899_096_648 valid function signatures, all of which I would need to explicitly define
-P = typing.ParamSpec("P")
-ChatWithStrArgsFunction = Callable[
-    typing.Concatenate[str, P], types.InteractionResponse
-]
-ChatWithOStrArgsFunction = Callable[
-    typing.Concatenate[Optional[str], P], types.InteractionResponse
-]
-ChatWithIntArgsFunction = Callable[
-    typing.Concatenate[int, P], types.InteractionResponse
-]
-ChatWithOIntArgsFunction = Callable[
-    typing.Concatenate[Optional[int], P], types.InteractionResponse
-]
-ChatWithFloatArgsFunction = Callable[
-    typing.Concatenate[float, P], types.InteractionResponse
-]
-ChatWithOFloatArgsFunction = Callable[
-    typing.Concatenate[Optional[float], P], types.InteractionResponse
-]
-ChatWithBoolArgsFunction = Callable[
-    typing.Concatenate[bool, P], types.InteractionResponse
-]
-ChatWithOBoolArgsFunction = Callable[
-    typing.Concatenate[Optional[bool], P], types.InteractionResponse
-]
-ChatWithNoArgsFunction = Callable[[], types.InteractionResponse]
-ChatWithArgsFunction = Union[
-    ChatWithStrArgsFunction,
-    ChatWithIntArgsFunction,
-    ChatWithFloatArgsFunction,
-    ChatWithBoolArgsFunction,
-    ChatWithOStrArgsFunction,
-    ChatWithOIntArgsFunction,
-    ChatWithOFloatArgsFunction,
-    ChatWithOBoolArgsFunction,
-    ChatWithNoArgsFunction,
-]
-
-CommandFunction = Union[
-    ChatFunction, UserFunction, MessageFunction, ChatWithArgsFunction
-]
-
 
 def _make_chat_command(name: str, description: str, func: ChatFunction) -> ChatCommand:
-    return ChatCommand(name=name, description=description, func=func)
+    command = ChatCommand(name=name, description=description)
+    command.interaction_handler = func
+    return command
 
 
 def _make_user_command(name: str, _: str, func: UserFunction) -> UserCommand:
-    return UserCommand(name=name, func=func)
+    command = UserCommand(name=name)
+    command.interaction_handler = func
+    return command
 
 
 def _make_message_command(name: str, _: str, func: MessageFunction) -> MessageCommand:
-    return MessageCommand(name=name, func=func)
+    command = MessageCommand(name=name)
+    command.interaction_handler = func
+    return command
 
 
 COMMANDS = {
@@ -190,7 +149,8 @@ class CommandBuilder:
         ):
             command = command_class(name, description, f)
         else:
-            command = ChatCommandWithArgs(name, description, f)
+            command = ChatCommandWithArgs(name, description)
+            command.interaction_handler = f  # type: ignore
             for param in signature.parameters.values():
                 annotation = param.annotation
                 required = True
@@ -242,7 +202,8 @@ class CommandBuilder:
 
             command_description = description or command_name
 
-            subcommand = SubCommand(command_name, command_description, f)
+            subcommand = SubCommand(name=command_name, description=command_description)
+            subcommand.interaction_handler = f
             self.context.add_child(subcommand)
             return subcommand
 
@@ -291,9 +252,7 @@ class CommandBuilder:
 
         description = self.description or self.name
 
-        self.context = ChatMetaCommand(
-            name=self.name, description=description, children={}
-        )
+        self.context = ChatMetaCommand(name=self.name, description=description)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

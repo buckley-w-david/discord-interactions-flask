@@ -1,72 +1,246 @@
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Union, Dict
-import jsons
+import typing
+from typing import Union, Dict, Optional, Literal, Callable
 
-from discord_interactions_flask.discord_types import CommandType
+from discord_interactions_flask.discord_types import (
+    CommandType,
+    ApplicationCommandOption,
+)
 from discord_interactions_flask import discord_types as types
 from discord_interactions_flask import interactions
+from discord_interactions_flask.jsons import BaseModel
+
+ChatFunction = Callable[[interactions.ChatInteraction], types.InteractionResponse]
+UserFunction = Callable[[interactions.UserInteraction], types.InteractionResponse]
+MessageFunction = Callable[[interactions.MessageInteraction], types.InteractionResponse]
+
+# This isn't great, but it's the best I've been able to figure out
+# I want to somehow express that a ChatWithArgsFunction is a Callable with any number of args, all of which are a str, int, float, or bool
+# I haven't been able to figure that out, the best I can do here is say that it's a function that takes some args, the first of which is one of those types
+# The only "technically" correct way I can think of is generating all possible parameter combinations.
+# There is a max of 25 params, and 8 possible types (4 normal + 4 optional variants)
+# This results in 43_175_922_129_093_899_096_648 valid function signatures, all of which I would need to explicitly define
+P = typing.ParamSpec("P")
+ChatWithStrArgsFunction = Callable[
+    typing.Concatenate[str, P], types.InteractionResponse
+]
+ChatWithOStrArgsFunction = Callable[
+    typing.Concatenate[Optional[str], P], types.InteractionResponse
+]
+ChatWithIntArgsFunction = Callable[
+    typing.Concatenate[int, P], types.InteractionResponse
+]
+ChatWithOIntArgsFunction = Callable[
+    typing.Concatenate[Optional[int], P], types.InteractionResponse
+]
+ChatWithFloatArgsFunction = Callable[
+    typing.Concatenate[float, P], types.InteractionResponse
+]
+ChatWithOFloatArgsFunction = Callable[
+    typing.Concatenate[Optional[float], P], types.InteractionResponse
+]
+ChatWithBoolArgsFunction = Callable[
+    typing.Concatenate[bool, P], types.InteractionResponse
+]
+ChatWithOBoolArgsFunction = Callable[
+    typing.Concatenate[Optional[bool], P], types.InteractionResponse
+]
+ChatWithNoArgsFunction = Callable[[], types.InteractionResponse]
+ChatWithArgsFunction = Union[
+    ChatWithStrArgsFunction,
+    ChatWithIntArgsFunction,
+    ChatWithFloatArgsFunction,
+    ChatWithBoolArgsFunction,
+    ChatWithOStrArgsFunction,
+    ChatWithOIntArgsFunction,
+    ChatWithOFloatArgsFunction,
+    ChatWithOBoolArgsFunction,
+    ChatWithNoArgsFunction,
+]
+
+CommandFunction = Union[
+    ChatFunction, UserFunction, MessageFunction, ChatWithArgsFunction
+]
 
 
-class ChatCommand:
-    def __init__(self, name: str, description: str, func):
-        self.name = name
-        self.description = description
-        self.func = func
-        self.options = []
-        wraps(func)(self)
+class Command(BaseModel):
+    def spec(self) -> dict:
+        return self.dump(
+            use_enum_name=False, strip_privates=True, strip_properties=True
+        )
+
+
+@dataclass
+class ChatCommand(Command):
+    name: str  # Name of command, 1-32 characters
+    description: str  # 1-100 character description
+    type: Optional[
+        Literal[CommandType.CHAT]
+    ] = (
+        CommandType.CHAT
+    )  # one of application command type # Type of command, defaults 1 if not set
+    name_localizations: Optional[
+        dict[str, str]
+    ] = None  # Localization dictionary for the name field. Values follow the same restrictions as name
+    description_localizations: Optional[
+        dict[str, str]
+    ] = None  # Localization dictionary for the description field. Values follow the same restrictions as description
+    options: Optional[
+        list[ApplicationCommandOption]
+    ] = None  # the parameters for the command
+    default_member_permissions: Optional[
+        str
+    ] = None  # Set of permissions represented as a bit set
+    dm_permission: Optional[
+        bool
+    ] = None  # Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
 
     def add_option(self, option: types.ApplicationCommandOption):
-        self.options.append(option)
+        if not self.options:
+            self.options = [option]
+        else:
+            self.options.append(option)
 
-    def spec(self) -> dict:
-        return {
-            "name": self.name,
-            "type": CommandType.CHAT,
-            "description": self.description,
-            "options": [
-                jsons.dump(o, use_enum_name=False, strip_privates=True)
-                for o in self.options
-            ],
-        }
+    def handler(self, f: ChatFunction):
+        wraps(f)(self)
+        self._func = f
+        return self
+
+    @property
+    def interaction_handler(self) -> Optional[ChatFunction]:
+        return self._func
+
+    @interaction_handler.setter
+    def interaction_handler(self, f: ChatFunction):
+        self.handler(f)
 
     def __call__(self, interaction: interactions.ChatInteraction):
-        return self.func(interaction)
+        return self._func(interaction)
 
 
+@dataclass
+class UserCommand(Command):
+    name: str  # Name of command, 1-32 characters
+    type: Literal[
+        CommandType.USER
+    ] = (
+        CommandType.USER
+    )  # one of application command type # Type of command, defaults 1 if not set
+    name_localizations: Optional[
+        dict[str, str]
+    ] = None  # Localization dictionary for the name field. Values follow the same restrictions as name
+    default_member_permissions: Optional[
+        str
+    ] = None  # Set of permissions represented as a bit set
+    dm_permission: Optional[
+        bool
+    ] = None  # Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+
+    def handler(self, f: UserFunction):
+        wraps(f)(self)
+        self._func = f
+        return self
+
+    @property
+    def interaction_handler(self) -> Optional[UserFunction]:
+        return self._func
+
+    @interaction_handler.setter
+    def interaction_handler(self, f: UserFunction):
+        self.handler(f)
+
+    def __call__(self, interaction: interactions.UserInteraction):
+        return self._func(interaction)
+
+
+@dataclass
+class MessageCommand(Command):
+    name: str  # Name of command, 1-32 characters
+    type: Literal[
+        CommandType.MESSAGE
+    ] = (
+        CommandType.MESSAGE
+    )  # one of application command type # Type of command, defaults 1 if not set
+    name_localizations: Optional[
+        dict[str, str]
+    ] = None  # Localization dictionary for the name field. Values follow the same restrictions as name
+    default_member_permissions: Optional[
+        str
+    ] = None  # Set of permissions represented as a bit set
+    dm_permission: Optional[
+        bool
+    ] = None  # Indicates whether the command is available in DMs with the app, only for globally-scoped commands. By default, commands are visible.
+
+    def handler(self, f: MessageFunction):
+        wraps(f)(self)
+        self._func = f
+        return self
+
+    @property
+    def interaction_handler(self) -> Optional[MessageFunction]:
+        return self._func
+
+    @interaction_handler.setter
+    def interaction_handler(self, f: MessageFunction):
+        self.handler(f)
+
+    def __call__(self, interaction: interactions.MessageInteraction):
+        return self._func(interaction)
+
+
+@dataclass
 class ChatCommandWithArgs(ChatCommand):
+    def handler(self, f: ChatWithArgsFunction):
+        wraps(f)(self)
+        self._func = f
+        return self
+
+    @property
+    def interaction_handler(self) -> Optional[ChatWithArgsFunction]:
+        return self._func
+
+    @interaction_handler.setter
+    def interaction_handler(self, f: ChatWithArgsFunction):
+        self.handler(f)
+
     def __call__(self, interaction: interactions.ChatInteraction):
         if interaction.data.options:
             kwargs = {option.name: option.value for option in interaction.data.options}
         else:
             kwargs = {}
 
-        return self.func(**kwargs)
-
-
-class SubCommand(ChatCommand):
-    def spec(self) -> dict:
-        spec = super().spec()
-        spec["type"] = types.ApplicationCommandOptionType.SUB_COMMAND
-        return spec
+        # FIXME: Might have to rethink the ChatWithArgsFunction definition, pyright doesn't like it here
+        return self._func(**kwargs)  # type: ignore
 
 
 @dataclass
-class CommandGroup:
+class SubCommand(ChatCommand):
+    type: Literal[
+        types.ApplicationCommandOptionType.SUB_COMMAND
+    ] = (
+        types.ApplicationCommandOptionType.SUB_COMMAND
+    )  # one of application command type # Type of command, defaults 1 if not set
+
+
+@dataclass
+class CommandGroup(BaseModel):
     name: str
     description: str
-    subcommands: Dict[str, SubCommand] = field(default_factory=dict)
+    type: Literal[
+        types.ApplicationCommandOptionType.SUB_COMMAND_GROUP
+    ] = types.ApplicationCommandOptionType.SUB_COMMAND_GROUP
+    _subcommands: Dict[str, SubCommand] = field(default_factory=dict)
 
-    def spec(self):
-        return {
-            "name": self.name,
-            "description": self.description,
-            "type": types.ApplicationCommandOptionType.SUB_COMMAND_GROUP,
-            "options": [sc.spec() for (_, sc) in self.subcommands.items()],
-        }
+    def spec(self) -> dict:
+        spec: dict = self.dump(
+            use_enum_name=False, strip_privates=True, strip_properties=True
+        )
+        spec["options"] = [v.spec() for _, v in self._subcommands.items()]
+        return spec
 
     def add_child(self, subcommand: SubCommand):
-        self.subcommands[subcommand.name] = subcommand
+        self._subcommands[subcommand.name] = subcommand
 
     def __call__(
         self, interaction: interactions.ChatInteraction
@@ -81,26 +255,23 @@ class CommandGroup:
             )
 
         subcommand_data = group_options.options[0]
-        subcommand = self.subcommands[subcommand_data.name]
+        subcommand = self._subcommands[subcommand_data.name]
         return subcommand(interaction)
 
 
 @dataclass
-class ChatMetaCommand:
-    name: str
-    children: Dict[str, Union[CommandGroup, SubCommand]]
-    description: str
+class ChatMetaCommand(ChatCommand):
+    _children: Dict[str, Union[CommandGroup, SubCommand]] = field(default_factory=dict)
 
-    def spec(self):
-        return {
-            "name": self.name,
-            "type": CommandType.CHAT,
-            "description": self.description,
-            "options": [child.spec() for (_, child) in self.children.items()],
-        }
+    def spec(self) -> dict:
+        spec: dict = self.dump(
+            use_enum_name=False, strip_privates=True, strip_properties=True
+        )
+        spec["options"] = [v.spec() for _, v in self._children.items()]
+        return spec
 
     def add_child(self, child: Union[CommandGroup, SubCommand]):
-        self.children[child.name] = child
+        self._children[child.name] = child
 
     def __call__(
         self, interaction: interactions.ChatInteraction
@@ -109,44 +280,11 @@ class ChatMetaCommand:
             raise ValueError("Expected meta command to have a group or subcommand")
 
         data = interaction.data.options[0]
-        command = self.children[data.name]
+        command = self._children[data.name]
         if not command:
             raise ValueError("Subcomand is not part of this ChatMetaCommand")
 
         return command(interaction)
 
 
-class UserCommand:
-    def __init__(self, name: str, func):
-        self.name = name
-        self.func = func
-        wraps(func)(self)
-
-    def spec(self) -> dict:
-        return {
-            "name": self.name,
-            "type": CommandType.USER,
-        }
-
-    def __call__(self, interaction: interactions.UserInteraction):
-        return self.func(interaction)
-
-
-class MessageCommand:
-    def __init__(self, name: str, func):
-        self.name = name
-        self.func = func
-        wraps(func)(self)
-
-    def spec(self) -> dict:
-        return {
-            "name": self.name,
-            "type": CommandType.MESSAGE,
-        }
-
-    def __call__(self, interaction: interactions.MessageInteraction):
-        return self.func(interaction)
-
-
 BaseCommand = Union[ChatCommand, UserCommand, MessageCommand]
-Command = Union[ChatCommand, ChatMetaCommand, UserCommand, MessageCommand]

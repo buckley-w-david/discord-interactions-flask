@@ -1,4 +1,4 @@
-.PHONY: test build publish docs format
+.PHONY: test build publish docs format typecheck
 
 test:
 	poetry run pytest
@@ -11,6 +11,9 @@ publish: build
 
 format:
 	poetry run black discord_interactions_flask/ docs/ tests/
+
+typecheck:
+	poetry run pyright
 
 docs:
 	./build-docs.sh

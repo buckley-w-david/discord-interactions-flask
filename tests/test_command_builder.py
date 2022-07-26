@@ -77,6 +77,8 @@ def test_builder_build_chat_with_args_command():
     command = builder(chat_with_args)
     assert isinstance(command, ChatCommand)
     options = command.options
+    assert options is not None
+
     assert len(options) == 6
 
     assert options[0].name == "s"
@@ -137,7 +139,7 @@ def test_builder_subcommand():
     assert isinstance(meta_command, ChatMetaCommand)
     assert meta_command.name == "meta"
     assert meta_command.description == "top level description"
-    assert subcommand is meta_command.children["subname"]
+    assert subcommand is meta_command._children["subname"]
 
 
 def test_builder_group():
@@ -152,8 +154,8 @@ def test_builder_group():
     _, meta_command = d.commands[None].popitem()
     meta_command = typing.cast(ChatMetaCommand, meta_command)
 
-    group = typing.cast(CommandGroup, meta_command.children["group"])
+    group = typing.cast(CommandGroup, meta_command._children["group"])
     assert meta_command.description == "top level description"
     assert group.name == "group"
     assert group.description == "group level description"
-    assert group.subcommands["subname"] is subcommand
+    assert group._subcommands["subname"] is subcommand
