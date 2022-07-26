@@ -239,6 +239,10 @@ class CommandGroup(BaseModel):
         spec["options"] = [v.spec() for _, v in self._subcommands.items()]
         return spec
 
+    @property
+    def options(self):
+        return [v for _, v in self._subcommands.items()]
+
     def add_child(self, subcommand: SubCommand):
         self._subcommands[subcommand.name] = subcommand
 
@@ -272,6 +276,10 @@ class ChatMetaCommand(ChatCommand):
 
     def add_child(self, child: Union[CommandGroup, SubCommand]):
         self._children[child.name] = child
+
+    @property
+    def options(self):
+        return [v for _, v in self._children.items()]
 
     def __call__(
         self, interaction: interactions.ChatInteraction
