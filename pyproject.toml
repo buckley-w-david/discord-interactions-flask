@@ -21,7 +21,7 @@ black = "^22.6.0"
 pydocstyle = "^6.1.1"
 Sphinx = "^5.1.0"
 sphinx-rtd-theme = "^1.0.0"
-pyright = "^1.1.263"
+pyright = "^1.1.268"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
