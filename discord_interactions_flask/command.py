@@ -281,6 +281,10 @@ class ChatMetaCommand(ChatCommand):
     def options(self):
         return [v for _, v in self._children.items()]
 
+    @options.setter
+    def options(self, _):
+        pass
+
     def __call__(
         self, interaction: interactions.ChatInteraction
     ) -> types.InteractionResponse:
