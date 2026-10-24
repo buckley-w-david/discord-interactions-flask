@@ -27,7 +27,7 @@ Repository = "https://github.com/buckley-w-david/discord-interactions-flask"
 
 [dependency-groups]
 dev = [
-  "pytest>=7.1,<8",
+  "pytest>=9.0.3,<10",
   "black>=22.10,<23",
   "pydocstyle>=6.1,<7",
   "Sphinx>=5.3,<6",
