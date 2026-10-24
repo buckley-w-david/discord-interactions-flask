@@ -1,6 +1,6 @@
 [project]
 name = "discord-interactions-flask"
-version = "0.1.1"
+version = "0.2.0"
 description = ""
 authors = [{ name = "David Buckley", email = "david@davidbuckley.ca" }]
 requires-python = ">=3.10,<4"
