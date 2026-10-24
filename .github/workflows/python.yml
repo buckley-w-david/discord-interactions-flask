@@ -13,17 +13,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
-        run: |
-          pip install poetry==1.1.13
-          poetry config virtualenvs.create false
-          poetry install
+        run: uv sync --locked
       - name: Lint with black
         run: |
-          black --check discord_interactions_flask
+          uv run black --check discord_interactions_flask
       - name: Test with pytest
         run: |
-          pytest
+          uv run pytest
       - name: Typecheck with pyright
         run: |
-          pyright discord_interactions_flask
+          uv run pyright discord_interactions_flask

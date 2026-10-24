@@ -1,18 +1,17 @@
 FROM python:3.10
 
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    /root/.local/bin/poetry config virtualenvs.create false
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ENV PATH="${PATH}:/root/.local/bin"
-
-COPY pyproject.toml poetry.lock /repo
 WORKDIR /repo
 
-RUN poetry install --no-root
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --locked --no-install-project
 
 COPY . /repo
 
-RUN poetry install
+RUN uv sync --locked
+
+ENV PATH="/repo/.venv/bin:$PATH"
 
 WORKDIR /repo/docs
 VOLUME /repo/docs/build/html

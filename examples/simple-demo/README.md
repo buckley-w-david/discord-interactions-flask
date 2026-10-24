@@ -10,6 +10,6 @@ $ cd discord-interactions-flask/examples/simple-demo
 $ export DISCORD_PUBLIC_KEY="..."
 $ export DISCORD_CLIENT_ID="..."
 $ export DISCORD_CLIENT_SECRET="..."
-$ poetry install
-$ FLASK_APP=simple_demo poetry run flask run
+$ uv sync
+$ FLASK_APP=simple_demo uv run flask run
 ```

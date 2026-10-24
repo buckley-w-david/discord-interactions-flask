@@ -12,6 +12,6 @@ $ cd discord-interactions-flask/examples/repl-bot
 $ export DISCORD_PUBLIC_KEY="..."
 $ export DISCORD_CLIENT_ID="..."
 $ export DISCORD_CLIENT_SECRET="..."
-$ poetry install
-$ FLASK_APP=repl_bot poetry run flask run
+$ uv sync
+$ FLASK_APP=repl_bot uv run flask run
 ```

@@ -1,19 +1,19 @@
 .PHONY: test build publish docs format typecheck
 
 test:
-	poetry run pytest
+	uv run pytest
 
 build: test
-	poetry build
+	uv build
 
 publish: build
-	poetry publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}
+	uv publish --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD}
 
 format:
-	poetry run black discord_interactions_flask/ docs/ tests/
+	uv run black discord_interactions_flask/ docs/ tests/
 
 typecheck:
-	poetry run pyright
+	uv run pyright
 
 docs:
 	./build-docs.sh
